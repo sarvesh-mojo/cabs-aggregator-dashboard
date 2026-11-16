@@ -1,0 +1,72 @@
+/* .DatepickerBG {
+    position: absolute;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1;
+    top: 0;
+    left: 0;
+} */
+
+.DatepickerBG{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    backdrop-filter:blur(2px);
+    z-index:999;
+}
+
+/* .picker-container {
+    background: #fff;
+    z-index: 1;
+    margin: 0 auto;
+    position: absolute;
+    left: 30%;
+    border-radius: 5px;
+    top: 8%;
+    padding: 2%;
+} */
+
+.picker-container{
+    position:fixed;
+    top:80px;
+    left:50%;
+    transform:translateX(-50%);
+
+    background:#fff;
+    border-radius:16px;
+    padding:20px;
+
+    box-shadow:0 12px 35px rgba(0,0,0,.18);
+    border:1px solid #e5e7eb;
+
+    z-index:1000;
+
+    max-height:calc(100vh - 100px);
+    overflow-y:auto;
+}
+
+
+.rdrDefinedRangesWrapper {
+    width: 177px;
+}
+
+/* media query///////////// */
+@media screen and (max-width:400px) {
+    .rdrDefinedRangesWrapper {
+        width: 100px;
+    }
+
+    .picker-container {
+        width: 96%;
+        left: 2%;
+    }
+
+    .rdrCalendarWrapper {
+        font-size: 8px;
+    }
+}
+
+/* .picker-container {
+    width: 50%;
+} */

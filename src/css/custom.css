@@ -1,0 +1,6 @@
+.BookingTable td , .BookingTable th{
+  padding: 10px !important;
+}
+.BookingTable th{
+  background-color:  #d9d9d9 !important;
+}

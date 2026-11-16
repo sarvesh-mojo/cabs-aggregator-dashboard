@@ -1,0 +1,2893 @@
+<!DOCTYPE html>
+<html ng-app="offersManagementApp">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offers Management - Offer Engine</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #e67e22 0%, #8e44ad 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 98%;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #2c3e50, #e67e22);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h2 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .login-container {
+        max-width: 400px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .login-form {
+        background: #f8f9fa;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .login-form h3 {
+        color: #2c3e50;
+        margin-bottom: 30px;
+        font-size: 1.8rem;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+        text-align: left;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555;
+        font-weight: 600;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #e67e22;
+      }
+
+      .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        margin: 5px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        background: #95a5a6;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #7f8c8d;
+      }
+
+      .btn-outline {
+        background: white;
+        color: #2c3e50;
+        border: 2px solid #e67e22;
+      }
+
+      .btn-outline:hover {
+        background: #fdf2e9;
+      }
+
+      .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #ecf0f1;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .dashboard-header h3 {
+        color: #2c3e50;
+        font-size: 1.8rem;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .user-info span {
+        color: #7f8c8d;
+      }
+
+      .table-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .table-tab {
+        padding: 10px 16px;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .table-tab:hover {
+        border-color: #e67e22;
+        background: #fdf2e9;
+      }
+
+      .table-tab.active {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        color: white;
+        border-color: #e67e22;
+      }
+
+      .filter-controls {
+        margin-bottom: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .filter-row {
+        display: flex;
+        gap: 15px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+      }
+
+      .filter-item {
+        flex: 1;
+        min-width: 180px;
+      }
+
+      .filter-item label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .filter-item input,
+      .filter-item select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .curl-box {
+        margin-top: 15px;
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.5;
+      }
+
+      .curl-box .curl-label {
+        color: #e67e22;
+        font-weight: bold;
+        margin-bottom: 8px;
+        display: block;
+        font-family: inherit;
+      }
+
+      .docs-panel {
+        margin-bottom: 25px;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .docs-toggle {
+        width: 100%;
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #8e44ad, #6c3483);
+        color: white;
+        border: none;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .docs-body {
+        padding: 20px;
+        background: #fafafa;
+        max-height: 70vh;
+        overflow-y: auto;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+      }
+
+      .docs-note {
+        background: #fff3cd;
+        border-left: 4px solid #e67e22;
+        padding: 12px 15px;
+        margin: 12px 0;
+        border-radius: 0 6px 6px 0;
+        font-size: 13px;
+      }
+
+      .docs-body ol {
+        margin: 10px 0 10px 20px;
+      }
+
+      .docs-body h5 {
+        color: #34495e;
+        margin: 15px 0 8px;
+        font-size: 1rem;
+      }
+
+      .docs-body h4 {
+        color: #2c3e50;
+        margin: 20px 0 10px;
+        font-size: 1.1rem;
+      }
+
+      .docs-body h4:first-child {
+        margin-top: 0;
+      }
+
+      .docs-body ul {
+        margin: 10px 0 10px 20px;
+      }
+
+      .docs-body table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+        font-size: 13px;
+      }
+
+      .docs-body th,
+      .docs-body td {
+        border: 1px solid #ddd;
+        padding: 8px 10px;
+        text-align: left;
+      }
+
+      .docs-body th {
+        background: #ecf0f1;
+      }
+
+      .docs-body pre {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 12px;
+        margin: 10px 0;
+      }
+
+      .doc-section {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+
+      .doc-section-header {
+        padding: 10px 15px;
+        background: #ecf0f1;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .doc-section-content {
+        padding: 15px;
+        display: none;
+        background: white;
+      }
+
+      .doc-section.open .doc-section-content {
+        display: block;
+      }
+
+      .table-container {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+        overflow-x: auto;
+        width: 100%;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 800px;
+      }
+
+      .table th {
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        color: white;
+        padding: 12px 10px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #ecf0f1;
+        vertical-align: middle;
+        font-size: 13px;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .table tbody tr:hover {
+        background: #fdf2e9;
+      }
+
+      .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #ecf0f1;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .pagination {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+
+      .pagination button,
+      .pagination span {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        background: white;
+        color: #2c3e50;
+        font-size: 13px;
+        transition: all 0.3s ease;
+      }
+
+      .pagination button:hover:not(:disabled) {
+        background: #e67e22;
+        color: white;
+        border-color: #e67e22;
+      }
+
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .pagination .active {
+        background: #e67e22;
+        color: white;
+        border-color: #e67e22;
+      }
+
+      .pagination-info {
+        color: #666;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .limit-select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+
+      .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #e67e22;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #7f8c8d;
+      }
+
+      .no-data i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+
+      .tip-box {
+        margin-bottom: 10px;
+        padding: 10px;
+        background: #fdf2e9;
+        border-radius: 5px;
+        font-size: 12px;
+        color: #7d6608;
+        border-left: 4px solid #e67e22;
+      }
+
+      .lifecycle-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0;
+      }
+
+      .lifecycle-step {
+        background: #e8f6f3;
+        border: 1px solid #1abc9c;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #117a65;
+      }
+
+      .view-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+      }
+
+      .view-tab {
+        flex: 1;
+        padding: 14px 20px;
+        border: 2px solid #ecf0f1;
+        border-radius: 10px;
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .view-tab:hover {
+        border-color: #e67e22;
+        background: #fdf2e9;
+      }
+
+      .view-tab.active {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        color: white;
+        border-color: #e67e22;
+      }
+
+      .wizard-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 25px;
+      }
+
+      .wizard-step {
+        flex: 1;
+        min-width: 100px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #ecf0f1;
+        color: #7f8c8d;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .wizard-step.active {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        color: white;
+      }
+
+      .wizard-step.done {
+        background: #d5f5e3;
+        color: #117a65;
+        border: 1px solid #1abc9c;
+      }
+
+      .create-panel {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border: 2px solid #ecf0f1;
+      }
+
+      .create-panel h4 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 18px;
+      }
+
+      .form-grid .form-group {
+        margin-bottom: 0;
+      }
+
+      .form-grid .form-group.full-width {
+        grid-column: 1 / -1;
+      }
+
+      .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #e67e22;
+      }
+
+      .field-hint {
+        font-size: 11px;
+        color: #95a5a6;
+        margin-top: 4px;
+      }
+
+      .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        color: #555;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .rule-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 15px;
+      }
+
+      .rule-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .rule-card-header h5 {
+        color: #2c3e50;
+        font-size: 1rem;
+      }
+
+      .btn-danger {
+        background: #e74c3c;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #c0392b;
+      }
+
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+
+      .wizard-nav {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 2px solid #ecf0f1;
+      }
+
+      .review-section {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #ecf0f1;
+      }
+
+      .review-section h5 {
+        color: #e67e22;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+      }
+
+      .review-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 13px;
+      }
+
+      .review-row:last-child {
+        border-bottom: none;
+      }
+
+      .review-label {
+        color: #7f8c8d;
+        font-weight: 600;
+      }
+
+      .create-result {
+        margin-top: 15px;
+      }
+
+      .create-result-item {
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .create-result-item.success {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .create-result-item.error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .create-result-item.skip {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .optional-badge {
+        background: #8e44ad;
+        color: white;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+
+      @media (max-width: 768px) {
+        .filter-row {
+          flex-direction: column;
+        }
+
+        .filter-item {
+          width: 100%;
+        }
+
+        .table-tab {
+          flex: 1 1 45%;
+          text-align: center;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body ng-controller="OffersManagementCtrl">
+    <div class="container">
+      <div class="header">
+        <h2><i class="fas fa-tags"></i> Offers Management</h2>
+        <p>Offer Engine — create offers easily or browse tables via genericCreate / genericSearch</p>
+      </div>
+
+      <div class="content">
+        <div ng-show="!isLoggedIn" class="login-container">
+          <div class="login-form">
+            <h3><i class="fas fa-sign-in-alt"></i> Login</h3>
+
+            <div class="form-group">
+              <label><i class="fas fa-server"></i> Host Environment</label>
+              <select ng-model="filterData.host">
+                <option value="https://devindigo.bookairportcab.com">Dev Indigo</option>
+                <option value="https://preprod-api.bookairportcab.com">Pre-Prod API</option>
+                <option value="https://prodapi.bookairportcab.com">Prod API</option>
+                <option value="https://ixg-dev-api.bookairportcab.com">IXG Dev API</option>
+                <option value="https://ixigo-preprod-api.bookairportcab.com">IXG Pre-Prod API</option>
+                <option value="https://ixg-prod-api.bookairportcab.com">IXG Prod API</option>
+              </select>
+            </div>
+
+            <form ng-submit="login()" novalidate>
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Username</label>
+                <input
+                  type="text"
+                  ng-model="loginData.username"
+                  required
+                  placeholder="Enter your username"
+                />
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input
+                  type="password"
+                  ng-model="loginData.password"
+                  required
+                  placeholder="Enter your password"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary" ng-disabled="loading">
+                <span ng-if="loading" class="loading"></span>
+                <i class="fas fa-sign-in-alt" ng-if="!loading"></i>
+                {{loading ? 'Signing in...' : 'Login'}}
+              </button>
+            </form>
+            <div
+              ng-if="loginMsg"
+              class="alert"
+              ng-class="loginMsg.includes('successful') ? 'alert-success' : 'alert-error'"
+            >
+              <i
+                class="fas"
+                ng-class="loginMsg.includes('successful') ? 'fa-check-circle' : 'fa-exclamation-circle'"
+              ></i>
+              {{loginMsg}}
+            </div>
+          </div>
+        </div>
+
+        <div ng-show="isLoggedIn">
+          <div class="dashboard-header">
+            <div>
+              <h3><i class="fas fa-tags"></i> {{activeTableLabel}}</h3>
+              <small style="color: #7f8c8d;"><i class="fas fa-server"></i> {{filterData.host}}</small>
+            </div>
+            <div class="user-info">
+              <span><i class="fas fa-user-circle"></i> Welcome, {{loginData.username}}</span>
+              <button type="button" ng-click="toggleDocs()" class="btn btn-outline">
+                <i class="fas fa-book"></i> {{showDocs ? 'Hide' : 'Show'}} Documentation
+              </button>
+              <button type="button" ng-click="logout()" class="btn btn-secondary">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+          </div>
+
+          <div class="view-tabs">
+            <button
+              type="button"
+              class="view-tab"
+              ng-class="{active: viewMode === 'create'}"
+              ng-click="viewMode = 'create'"
+            >
+              <i class="fas fa-plus-circle"></i> Create Offer
+            </button>
+            <button
+              type="button"
+              class="view-tab"
+              ng-class="{active: viewMode === 'browse'}"
+              ng-click="viewMode = 'browse'"
+            >
+              <i class="fas fa-table"></i> Browse Tables
+            </button>
+          </div>
+
+          <div class="docs-panel" ng-show="showDocs">
+            <button type="button" class="docs-toggle" ng-click="showDocs = !showDocs">
+              <span><i class="fas fa-book-open"></i> Offer Engine Demo Documentation</span>
+              <i class="fas" ng-class="showDocs ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+            <div class="docs-body">
+              <p>
+                This document explains how to create and configure offer codes in the database, and how the
+                Offer Engine (<code>controllers/offerController.js</code>) evaluates and applies them at runtime.
+              </p>
+
+              <h4>Overview</h4>
+              <p>The offer system supports:</p>
+              <ul>
+                <li>Flat discount offers</li>
+                <li>Percentage discount offers (with optional <code>max_discount</code> cap)</li>
+                <li>New user, logged-in user, and guest user targeting</li>
+                <li>Device-specific offers (<code>web</code>, <code>msite</code>, <code>app</code>)</li>
+                <li>City-specific offers (with alias normalization)</li>
+                <li>Cab partner targeting</li>
+                <li>Time schedule based offers (<code>SCHEDULE</code> operator on <code>current_time</code>)</li>
+                <li>Budget-controlled offers</li>
+                <li>Total usage, per-user, and per-day limits</li>
+                <li>Stackable flag on offer payload (returned to clients; server applies one offer at a time)</li>
+              </ul>
+              <div class="docs-note">
+                <strong>Not handled by this controller:</strong> coupon code validation (<code>offer_coupon_codes</code>
+                exists in the schema but is not read by <code>offerController.js</code>). Coupon flows are handled
+                separately via <code>getApplicableCoupons</code> in <code>fareSearchDTO.js</code>.
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.tables}">
+                <div class="doc-section-header" ng-click="toggleDocSection('tables')">
+                  Database Tables Used
+                  <i class="fas" ng-class="docSections.tables ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <table>
+                    <thead>
+                      <tr><th>Table</th><th>Purpose</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>offers</td><td>Main offer configuration</td></tr>
+                      <tr><td>offer_rules</td><td>Rule engine conditions</td></tr>
+                      <tr><td>offer_limits</td><td>Usage and budget limits (enforced on apply)</td></tr>
+                      <tr><td>offer_transactions</td><td>Applied / consumed tracking</td></tr>
+                    </tbody>
+                  </table>
+                  <p>Scheduling and audience targeting are configured through <code>offer_rules</code> — not separate <code>offer_schedule</code> / <code>offer_audience</code> tables.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.api}">
+                <div class="doc-section-header" ng-click="toggleDocSection('api')">
+                  API Endpoints
+                  <i class="fas" ng-class="docSections.api ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p>Base path: <code>POST /api/v1/offers/</code></p>
+                  <table>
+                    <thead>
+                      <tr><th>Endpoint</th><th>Handler</th><th>Purpose</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>/getApplicableOffers</code></td><td>getApplicableOffers</td><td>List and evaluate offers for a search/fare context</td></tr>
+                      <tr><td><code>/applyOffer</code></td><td>applyOffer</td><td>Apply a selected offer to a <code>searchId</code></td></tr>
+                      <tr><td><code>/removeOffer</code></td><td>removeOffer</td><td>Delete applied offer transaction for a <code>searchId</code></td></tr>
+                      <tr><td><code>/consumeOffer</code></td><td>consumeOffer</td><td>Mark an applied offer as consumed after booking</td></tr>
+                    </tbody>
+                  </table>
+                  <p>Required headers: <code>Authorization</code>, <code>correlationId</code>, <code>devicetype</code> (used for device rule evaluation).</p>
+
+                  <h5>getApplicableOffers — request body</h5>
+                  <pre>{
+  "fare": 1000,
+  "baseFare": 800,
+  "searchId": "optional-search-id",
+  "userMeta": {
+    "rideCount": 2,
+    "isNewUser": false
+  },
+  "extra": {
+    "deviceType": "web",
+    "userAgent": "Mozilla/5.0",
+    "cabPartner": "UBER",
+    "city": "DEL"
+  },
+  "customerId": "CUST001",
+  "caller": "applyOffer"
+}</pre>
+                  <table>
+                    <thead>
+                      <tr><th>Field</th><th>Required</th><th>Notes</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>fare</code></td><td>Optional*</td><td>Total fare; used for <code>min_cart_value</code> and <code>finalPrice</code></td></tr>
+                      <tr><td><code>baseFare</code></td><td>Optional*</td><td>Base fare; used for discount calculation when &gt; 0</td></tr>
+                      <tr><td><code>searchId</code></td><td>Optional</td><td>When present, fare/city/partner are resolved from fare cache via <code>validateFares</code></td></tr>
+                      <tr><td><code>userMeta.rideCount</code></td><td>Optional</td><td>Defaults to <code>0</code></td></tr>
+                      <tr><td><code>userMeta.isNewUser</code></td><td>Optional</td><td>Defaults to <code>false</code></td></tr>
+                      <tr><td><code>extra.deviceType</code></td><td>Optional</td><td>Falls back to <code>devicetype</code> header</td></tr>
+                      <tr><td><code>extra.city</code></td><td>Optional</td><td>Normalized via city aliases</td></tr>
+                      <tr><td><code>extra.cabPartner</code></td><td>Optional</td><td>Cab partner for rule matching</td></tr>
+                      <tr><td><code>customerId</code></td><td>Optional</td><td>Used for <code>customerId</code> rules and limit checks</td></tr>
+                      <tr><td><code>caller</code></td><td>Optional</td><td>Set to <code>"applyOffer"</code> internally by apply flow; skips <code>userVisibility</code> filter</td></tr>
+                    </tbody>
+                  </table>
+                  <p><em>*When <code>searchId</code> is provided, <code>fare</code> and <code>baseFare</code> are overwritten from validated cache data.</em></p>
+
+                  <h5>getApplicableOffers — response shape (per offer)</h5>
+                  <pre>{
+  "offer_id": "OFFER100",
+  "name": "Flat 100 OFF",
+  "type": "flat",
+  "discount_value": 100,
+  "max_discount": null,
+  "discount": 100,
+  "finalPrice": 900,
+  "applicable": true,
+  "is_stackable": 0,
+  "tnc": "Applicable once per user",
+  "title": "Get Flat ₹100 OFF",
+  "subtitle": "Applicable on all rides above ₹500",
+  "userVisibility": 1
+}</pre>
+                  <p>Non-applicable offers are still returned with <code>"applicable": false</code>. Offers with <code>userVisibility = 0</code> are excluded unless <code>caller === "applyOffer"</code>. Results are sorted: applicable offers first, then by highest <code>discount</code>.</p>
+
+                  <h5>applyOffer — request body</h5>
+                  <pre>{ "offerId": "OFFER100", "searchId": "SEARCH123" }</pre>
+                  <p>On success, returns the selected offer plus <code>fareDisplay</code> and <code>serializedFareDisplay</code>. Re-applying the same <code>offerId</code> + <code>searchId</code> returns <code>"Offer already applied"</code> (idempotent).</p>
+
+                  <h5>removeOffer — request body</h5>
+                  <pre>{ "offerId": "OFFER100", "searchId": "SEARCH123" }</pre>
+                  <p>Deletes <strong>all</strong> rows in <code>offer_transactions</code> for the given <code>searchId</code> (not a status update).</p>
+
+                  <h5>consumeOffer — request body</h5>
+                  <pre>{
+  "offerId": "OFFER100",
+  "searchId": "SEARCH123",
+  "bookingId": "BOOK456"
+}</pre>
+                  <p>Sets <code>booking_id</code> and <code>status = 'consumed'</code> on the matching transaction.</p>
+
+                  <p style="margin-top:15px;"><strong>Browse / create via operations API:</strong></p>
+                  <ul>
+                    <li>POST <code>/api/v1/operations/genericSearch</code></li>
+                    <li>POST <code>/api/v1/operations/genericCreate</code></li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.context}">
+                <div class="doc-section-header" ng-click="toggleDocSection('context')">
+                  Evaluation Context
+                  <i class="fas" ng-class="docSections.context ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p>Rules are evaluated against a context built at runtime:</p>
+                  <table>
+                    <thead>
+                      <tr><th>Context field</th><th>Source</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>user_id</code></td><td><code>req.userToken.customerId</code></td></tr>
+                      <tr><td><code>user_type</code></td><td><code>"loggedin"</code> if token has <code>customerId</code>, else <code>"guest"</code></td></tr>
+                      <tr><td><code>device_type</code></td><td>Normalized from <code>extra.deviceType</code> or <code>devicetype</code> header</td></tr>
+                      <tr><td><code>user_agent</code></td><td><code>extra.userAgent</code> or <code>useragent</code> header</td></tr>
+                      <tr><td><code>cab_partner</code></td><td><code>extra.cabPartner</code></td></tr>
+                      <tr><td><code>city</code></td><td>Normalized from <code>extra.city</code></td></tr>
+                      <tr><td><code>cart_value</code></td><td>Total fare (numeric)</td></tr>
+                      <tr><td><code>ride_count</code></td><td><code>userMeta.rideCount</code></td></tr>
+                      <tr><td><code>current_time</code></td><td>Current time in <code>Asia/Kolkata</code></td></tr>
+                      <tr><td><code>customerId</code></td><td><code>req.body.customerId</code></td></tr>
+                      <tr><td><code>is_new_user</code></td><td><code>userMeta.isNewUser</code></td></tr>
+                    </tbody>
+                  </table>
+
+                  <h5>Device type normalization</h5>
+                  <table>
+                    <thead>
+                      <tr><th>Canonical</th><th>Accepted inputs</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>web</code></td><td><code>web</code>, <code>website</code>, <code>desktop</code>, <code>unknown</code> (default)</td></tr>
+                      <tr><td><code>msite</code></td><td><code>msite</code>, <code>m-site</code>, <code>mobileweb</code>, <code>mweb</code></td></tr>
+                      <tr><td><code>app</code></td><td><code>app</code>, <code>an</code>, <code>android</code>, <code>ios</code>, <code>mobile</code></td></tr>
+                    </tbody>
+                  </table>
+                  <p>Use <code>web</code>, <code>msite</code>, or <code>app</code> in rule values. Example: an Android app request normalizes to <code>app</code>, so a rule with value <code>"android"</code> will <strong>not</strong> match unless the stored value is <code>"app"</code>.</p>
+
+                  <h5>City normalization</h5>
+                  <table>
+                    <thead>
+                      <tr><th>Input</th><th>Normalized</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>DELHI, DEL, HDO</td><td>DEL</td></tr>
+                      <tr><td>MUMBAI, BOM, MUM</td><td>BOM</td></tr>
+                      <tr><td>NMI</td><td>NMI</td></tr>
+                      <tr><td>BANGALORE, BENGALURU, BLR</td><td>BLR</td></tr>
+                      <tr><td>HYDERABAD, HYD</td><td>HYD</td></tr>
+                      <tr><td>CHENNAI, MAA</td><td>MAA</td></tr>
+                      <tr><td>PUNE, PNQ</td><td>PNQ</td></tr>
+                    </tbody>
+                  </table>
+                  <p>You can store either alias or canonical code in rules — both work after normalization.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.offers}">
+                <div class="doc-section-header" ng-click="toggleDocSection('offers')">
+                  Step 1: Create Main Offer Entry
+                  <i class="fas" ng-class="docSections.offers ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <pre>INSERT INTO offers (
+    offer_id, name, title, subtitle, type,
+    discount_value, max_discount, min_cart_value,
+    priority, is_stackable, status,
+    start_time, end_time, client_id, userVisibility, tnc
+)
+VALUES (
+    'OFFER100',
+    'Flat 100 OFF',
+    'Get Flat ₹100 OFF',
+    'Applicable on all rides above ₹500',
+    'flat',
+    100,
+    NULL,
+    500,
+    10,
+    0,
+    'active',
+    '2026-05-01 00:00:00',
+    '2026-06-30 23:59:59',
+    'INDIGO',
+    1,
+    'Applicable once per user'
+);</pre>
+                  <table>
+                    <thead>
+                      <tr><th>Column</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>offer_id</code></td><td>Unique offer identifier</td></tr>
+                      <tr><td><code>name</code></td><td>Internal offer name</td></tr>
+                      <tr><td><code>title</code></td><td>UI display title</td></tr>
+                      <tr><td><code>subtitle</code></td><td>UI display subtitle</td></tr>
+                      <tr><td><code>type</code></td><td><code>flat</code> or <code>percentage</code></td></tr>
+                      <tr><td><code>discount_value</code></td><td>Flat amount or percentage</td></tr>
+                      <tr><td><code>max_discount</code></td><td>Cap for percentage offers (optional)</td></tr>
+                      <tr><td><code>min_cart_value</code></td><td>Minimum <strong>total fare</strong> required</td></tr>
+                      <tr><td><code>priority</code></td><td>Stored for reference; <strong>not used</strong> in runtime sorting</td></tr>
+                      <tr><td><code>is_stackable</code></td><td>Returned in API response</td></tr>
+                      <tr><td><code>status</code></td><td><code>active</code> / <code>inactive</code></td></tr>
+                      <tr><td><code>start_time</code></td><td>Offer start (IST via <code>CONVERT_TZ</code>)</td></tr>
+                      <tr><td><code>end_time</code></td><td>Offer expiry</td></tr>
+                      <tr><td><code>client_id</code></td><td>Client identifier (from <code>req.userDetails.client_id</code>)</td></tr>
+                      <tr><td><code>userVisibility</code></td><td><code>1</code> = shown in list; <code>0</code> = hidden (still validatable on apply)</td></tr>
+                      <tr><td><code>tnc</code></td><td>Terms and conditions</td></tr>
+                    </tbody>
+                  </table>
+                  <p>Active offers are fetched with:</p>
+                  <pre>WHERE status = 'active'
+  AND client_id = :client_id
+  AND (start_time IS NULL OR start_time &lt;= IST now)
+  AND (end_time IS NULL OR end_time &gt;= IST now)</pre>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.rules}">
+                <div class="doc-section-header" ng-click="toggleDocSection('rules')">
+                  Step 2: Add Offer Rules
+                  <i class="fas" ng-class="docSections.rules ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p>Rules live in <code>offer_rules</code>. Each offer must pass <strong>all rule-type groups</strong> (AND across groups). Within a group, if multiple rules share the same <code>rule_type</code>, <strong>any one</strong> matching rule passes the group (OR).</p>
+
+                  <h5>Supported rule types</h5>
+                  <table>
+                    <thead>
+                      <tr><th>Rule type</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>user_type</code></td><td><code>guest</code> / <code>loggedin</code></td></tr>
+                      <tr><td><code>device_type</code></td><td><code>web</code> / <code>msite</code> / <code>app</code></td></tr>
+                      <tr><td><code>city</code></td><td>City code restriction</td></tr>
+                      <tr><td><code>cab_partner</code></td><td>Cab provider restriction</td></tr>
+                      <tr><td><code>cart_value</code></td><td>Fare-based validation</td></tr>
+                      <tr><td><code>ride_count</code></td><td>Ride count validation</td></tr>
+                      <tr><td><code>is_new_user</code></td><td>New user flag</td></tr>
+                      <tr><td><code>current_time</code></td><td>Used with <code>SCHEDULE</code>, <code>DATE</code>, or <code>DATETIME</code> operators</td></tr>
+                      <tr><td><code>customerId</code></td><td>Customer-specific offer (matches <code>req.body.customerId</code>)</td></tr>
+                    </tbody>
+                  </table>
+
+                  <h5>Supported operators</h5>
+                  <table>
+                    <thead>
+                      <tr><th>Operator</th><th>Usage</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>=</code></td><td>Exact match</td></tr>
+                      <tr><td><code>!=</code></td><td>Not equal</td></tr>
+                      <tr><td><code>&gt;</code> / <code>&gt;=</code> / <code>&lt;</code> / <code>&lt;=</code></td><td>Numeric comparison</td></tr>
+                      <tr><td><code>IN</code></td><td>Value in array</td></tr>
+                      <tr><td><code>NOT_IN</code></td><td>Value not in array</td></tr>
+                      <tr><td><code>DATE</code></td><td>Same calendar date (IST)</td></tr>
+                      <tr><td><code>DATETIME</code></td><td>Exact datetime match (IST)</td></tr>
+                      <tr><td><code>SCHEDULE</code></td><td>Day + time window on <code>current_time</code></td></tr>
+                    </tbody>
+                  </table>
+                  <p>Rule <code>value</code> can be JSON string, JSON array, or comma-separated string (auto-split).</p>
+
+                  <h5>Examples</h5>
+                  <pre>-- Logged-in user only
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('OFFER100', 'user_type', '=', '"loggedin"');
+
+-- App device only
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('OFFER100', 'device_type', '=', '"app"');
+
+-- City restriction (multiple cities)
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('OFFER100', 'city', 'IN', '["DEL","BOM","BLR"]');
+
+-- Exclude a city
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('NOBLR', 'city', 'NOT_IN', '["BLR"]');
+
+-- Cab partner
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('OFFER100', 'cab_partner', '=', '"BLUSMART"');
+
+-- Minimum fare via rule
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('OFFER100', 'cart_value', '&gt;=', '500');
+
+-- New user
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('NEWUSER50', 'is_new_user', '=', 'true');
+
+-- Ride count
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('LOYALTY50', 'ride_count', '&lt;', '5');
+
+-- Customer-specific
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('VIP100', 'customerId', 'IN', '["CUST001", "CUST002"]');</pre>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.schedule}">
+                <div class="doc-section-header" ng-click="toggleDocSection('schedule')">
+                  Step 3: Schedule-Based Offers
+                  <i class="fas" ng-class="docSections.schedule ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p>Use <code>rule_type = 'current_time'</code> with operator <code>SCHEDULE</code>.</p>
+                  <h5>Weekend offer (Sat–Sun, 10 AM – 11 PM)</h5>
+                  <pre>INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES (
+    'WEEKEND100',
+    'current_time',
+    'SCHEDULE',
+    '{
+        "days": ["Saturday", "Sunday"],
+        "startTime": "10:00",
+        "endTime": "23:00"
+    }'
+);</pre>
+                  <h5>Overnight offer (Fri–Sat, 10 PM – 2 AM)</h5>
+                  <p>Overnight windows (<code>startTime &gt; endTime</code>) are supported:</p>
+                  <pre>INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES (
+    'NIGHT50',
+    'current_time',
+    'SCHEDULE',
+    '{
+        "days": ["Friday", "Saturday"],
+        "startTime": "22:00",
+        "endTime": "02:00"
+    }'
+);</pre>
+                  <p>Day names must match moment's full English names: <code>"Monday"</code>, <code>"Tuesday"</code>, etc.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.limits}">
+                <div class="doc-section-header" ng-click="toggleDocSection('limits')">
+                  Step 4: Configure Offer Limits
+                  <i class="fas" ng-class="docSections.limits ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p>Limits are stored in <code>offer_limits</code> and enforced during <strong>applyOffer</strong> (not during listing).</p>
+                  <pre>INSERT INTO offer_limits (
+    offer_id, total_budget, used_budget,
+    total_usage_limit, per_user_limit, per_day_limit
+)
+VALUES (
+    'OFFER100',
+    100000,
+    0,
+    1000,
+    1,
+    100
+);</pre>
+                  <table>
+                    <thead>
+                      <tr><th>Column</th><th>Enforced as</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>total_budget</code></td><td><code>used_budget + discount</code> must not exceed budget; <code>used_budget</code> incremented atomically on apply</td></tr>
+                      <tr><td><code>total_usage_limit</code></td><td>Count of <code>applied</code> + <code>consumed</code> transactions</td></tr>
+                      <tr><td><code>per_user_limit</code></td><td>Same count filtered by <code>customerId</code></td></tr>
+                      <tr><td><code>per_day_limit</code></td><td>Count of transactions created today</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.percentage}">
+                <div class="doc-section-header" ng-click="toggleDocSection('percentage')">
+                  Step 5: Percentage Discount Offers
+                  <i class="fas" ng-class="docSections.percentage ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <pre>INSERT INTO offers (
+    offer_id, name, title, subtitle, type,
+    discount_value, max_discount, min_cart_value,
+    priority, is_stackable, status, client_id, userVisibility
+)
+VALUES (
+    'PERCENT20',
+    '20 Percent OFF',
+    'Get 20% OFF',
+    'Maximum discount ₹150',
+    'percentage',
+    20,
+    150,
+    300,
+    20,
+    0,
+    'active',
+    'INDIGO',
+    1
+);</pre>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.discount}">
+                <div class="doc-section-header" ng-click="toggleDocSection('discount')">
+                  Discount Calculation Logic
+                  <i class="fas" ng-class="docSections.discount ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p>The engine uses two fare values:</p>
+                  <ul>
+                    <li><strong>Total fare</strong> (<code>fare</code>): used for <code>min_cart_value</code> check and <code>finalPrice</code></li>
+                    <li><strong>Base fare</strong> (<code>baseFare</code>): used to compute discount when present and &gt; 0; otherwise total fare is used</li>
+                  </ul>
+                  <h5>Flat offer</h5>
+                  <pre>discount   = discount_value
+discount   = min(discount, baseFare)   -- capped so discount never exceeds base
+finalPrice = totalFare - discount</pre>
+                  <p>Example: <code>fare = 1000</code>, <code>baseFare = 800</code>, flat ₹100 → discount = 100, finalPrice = 900.</p>
+                  <h5>Percentage offer</h5>
+                  <pre>discount   = (baseFare × discount_value) / 100
+discount   = min(discount, max_discount)   -- if max_discount set
+discount   = min(discount, baseFare)
+finalPrice = totalFare - discount</pre>
+                  <p>Example: <code>fare = 1000</code>, <code>baseFare = 800</code>, 10% → discount = 80, finalPrice = 920.</p>
+                  <p>Example with cap: <code>baseFare = 800</code>, 50% with <code>max_discount = 120</code> → discount = 120, finalPrice = 880.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.flow}">
+                <div class="doc-section-header" ng-click="toggleDocSection('flow')">
+                  Runtime Validation Flow
+                  <i class="fas" ng-class="docSections.flow ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <h5>getApplicableOffers</h5>
+                  <ol>
+                    <li>Validate request body (Joi schema)</li>
+                    <li>If <code>searchId</code> present → validate fare cache; populate <code>fare</code>, <code>baseFare</code>, <code>city</code>, <code>cabPartner</code></li>
+                    <li>Fetch active offers for <code>client_id</code></li>
+                    <li>Fetch rules for those offers</li>
+                    <li>For each offer: skip if <code>totalFare &lt; min_cart_value</code>; evaluate all rule-type groups; compute <code>discount</code> on base fare, <code>finalPrice</code> on total fare</li>
+                    <li>Sort: applicable first, then highest discount</li>
+                    <li>Filter by <code>userVisibility</code> (unless <code>caller === "applyOffer"</code>)</li>
+                  </ol>
+                  <h5>applyOffer</h5>
+                  <ol>
+                    <li>Validate <code>offerId</code> + <code>searchId</code></li>
+                    <li>Validate fare cache via <code>searchId</code></li>
+                    <li>Re-run <code>getApplicableOffers</code> (source of truth)</li>
+                    <li>Find offer where <code>offer_id === offerId</code> and <code>applicable === true</code></li>
+                    <li>Build updated <code>fareDisplay</code> with discount line</li>
+                    <li>Idempotency: return success if already applied for same offer + search</li>
+                    <li>Begin DB transaction: lock <code>offer_limits</code> row (<code>FOR UPDATE</code>); re-check limits; insert <code>offer_transactions</code> with status <code>applied</code>; increment <code>used_budget</code> if budget configured</li>
+                    <li>Commit</li>
+                  </ol>
+                  <p>Limits are <strong>not</strong> checked during listing — only on apply.</p>
+                </div>
+              </div>
+
+              <h4>Offer Lifecycle</h4>
+              <div class="lifecycle-steps">
+                <span class="lifecycle-step">1. Offer Created</span>
+                <span class="lifecycle-step">2. Rules Added</span>
+                <span class="lifecycle-step">3. Limits Added</span>
+                <span class="lifecycle-step">4. User Searches</span>
+                <span class="lifecycle-step">5. Offers Listed</span>
+                <span class="lifecycle-step">6. Offer Applied</span>
+                <span class="lifecycle-step">7. Booking Done</span>
+                <span class="lifecycle-step">8. Offer Consumed</span>
+              </div>
+              <ol>
+                <li>Offer created in <code>offers</code></li>
+                <li>Rules added in <code>offer_rules</code></li>
+                <li>Limits added in <code>offer_limits</code> (recommended for production)</li>
+                <li>User searches ride → offers attached in fare search via <code>getApplicableOffers</code></li>
+                <li>User selects offer → <code>applyOffer</code> validates, checks limits, writes transaction</li>
+                <li>User completes booking → <code>consumeOffer</code> marks transaction consumed</li>
+                <li>User removes offer before booking → <code>removeOffer</code> deletes transaction</li>
+              </ol>
+
+              <div class="doc-section" ng-class="{open: docSections.example}">
+                <div class="doc-section-header" ng-click="toggleDocSection('example')">
+                  Complete Example: Production-Ready Offer (MEGA150)
+                  <i class="fas" ng-class="docSections.example ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <p><strong>Scenario:</strong> Flat ₹150 OFF for logged-in users, min fare ₹700, Delhi and Mumbai only, weekends only, ₹5L budget, 1 use per user, max 5000 total uses.</p>
+                  <pre>-- 1. Create offer
+INSERT INTO offers (
+    offer_id, name, title, subtitle, type, discount_value,
+    min_cart_value, priority, is_stackable, status,
+    client_id, userVisibility, start_time, end_time
+)
+VALUES (
+    'MEGA150', 'Mega Weekend Offer', 'Flat ₹150 OFF', 'Weekend special offer',
+    'flat', 150, 700, 100, 0, 'active', 'INDIGO', 1,
+    '2026-05-01 00:00:00', '2026-06-30 23:59:59'
+);
+
+-- 2. Logged-in rule
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('MEGA150', 'user_type', '=', '"loggedin"');
+
+-- 3. City rule
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES ('MEGA150', 'city', 'IN', '["DELHI","MUMBAI"]');
+
+-- 4. Weekend schedule
+INSERT INTO offer_rules (offer_id, rule_type, operator, value)
+VALUES (
+    'MEGA150', 'current_time', 'SCHEDULE',
+    '{"days": ["Saturday", "Sunday"], "startTime": "00:00", "endTime": "23:59"}'
+);
+
+-- 5. Limits
+INSERT INTO offer_limits (
+    offer_id, total_budget, used_budget,
+    total_usage_limit, per_user_limit, per_day_limit
+)
+VALUES ('MEGA150', 500000, 0, 5000, 1, 500);</pre>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.transactions}">
+                <div class="doc-section-header" ng-click="toggleDocSection('transactions')">
+                  Transaction Management
+                  <i class="fas" ng-class="docSections.transactions ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <pre>-- Check applied offers
+SELECT * FROM offer_transactions WHERE status = 'applied';
+
+-- Check consumed offers
+SELECT * FROM offer_transactions WHERE status = 'consumed';
+
+-- Remove applied offer (via API) — removeOffer deletes the row:
+DELETE FROM offer_transactions WHERE search_id = :searchId;
+
+-- Disable an offer
+UPDATE offers SET status = 'inactive' WHERE offer_id = 'OFFER100';
+
+-- Extend expiry
+UPDATE offers SET end_time = '2026-12-31 23:59:59' WHERE offer_id = 'OFFER100';</pre>
+                  <p>Do <strong>not</strong> rely on setting <code>status = 'failed'</code> for removal — that is not what the API does.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.notes}">
+                <div class="doc-section-header" ng-click="toggleDocSection('notes')">
+                  Important Notes
+                  <i class="fas" ng-class="docSections.notes ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <h5>JSON rule values</h5>
+                  <p>The <code>value</code> column should contain valid JSON when storing arrays or objects. Correct: <code>'["DELHI","MUMBAI"]'</code>. Also accepted: comma-separated strings like <code>'DEL,BOM'</code> (auto-parsed to array).</p>
+                  <h5>userVisibility vs applicable</h5>
+                  <ul>
+                    <li><code>applicable: false</code> — offer returned but rules/min fare failed</li>
+                    <li><code>userVisibility: 0</code> — offer hidden from list API but still validated when applying by ID</li>
+                  </ul>
+                  <h5>Priority field</h5>
+                  <p><code>priority</code> is stored on the offer record but runtime sorting uses <strong>applicable status + discount amount</strong>, not priority.</p>
+                  <h5>Fare search integration</h5>
+                  <p>During fare search (<code>fareSearchDTO.js</code>), offers are fetched automatically and attached to cab results. Manual API calls can also invoke <code>/getApplicableOffers</code> directly.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.troubleshoot}">
+                <div class="doc-section-header" ng-click="toggleDocSection('troubleshoot')">
+                  Troubleshooting
+                  <i class="fas" ng-class="docSections.troubleshoot ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <h5>Offer not visible in list</h5>
+                  <ul>
+                    <li><code>status = 'active'</code></li>
+                    <li><code>userVisibility = 1</code></li>
+                    <li><code>start_time</code> / <code>end_time</code> window (IST)</li>
+                    <li>Rule evaluation failed → check <code>applicable: false</code> in full response (use <code>caller: "applyOffer"</code> to include hidden offers)</li>
+                    <li>Device/city values match normalized form (<code>app</code> not <code>android</code>)</li>
+                  </ul>
+                  <h5>Offer not applicable on apply</h5>
+                  <ul>
+                    <li>Limits exceeded (budget, per-user, per-day, total usage)</li>
+                    <li>Fare cache invalid or expired (<code>searchId</code>)</li>
+                    <li>Rules no longer match current context</li>
+                  </ul>
+                  <h5>Discount looks wrong</h5>
+                  <ul>
+                    <li>Discount is calculated on <strong>baseFare</strong>, final price on <strong>total fare</strong></li>
+                    <li>Percentage offers respect <code>max_discount</code></li>
+                    <li>Discount is capped at base fare amount</li>
+                  </ul>
+                  <h5>"Offer already applied"</h5>
+                  <p>Idempotent response — same <code>offerId</code> + <code>searchId</code> already has an <code>applied</code> transaction. Call <code>removeOffer</code> to clear before re-testing.</p>
+                </div>
+              </div>
+
+              <div class="doc-section" ng-class="{open: docSections.best}">
+                <div class="doc-section-header" ng-click="toggleDocSection('best')">
+                  Best Practices
+                  <i class="fas" ng-class="docSections.best ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </div>
+                <div class="doc-section-content">
+                  <ul>
+                    <li>Always add <code>offer_limits</code> for production offers</li>
+                    <li>Set <code>start_time</code> and <code>end_time</code></li>
+                    <li>Use canonical device values (<code>web</code>, <code>msite</code>, <code>app</code>) in rules</li>
+                    <li>Use city codes or known aliases consistently</li>
+                    <li>Test with both list and apply flows</li>
+                    <li>Monitor <code>offer_transactions</code> and <code>used_budget</code></li>
+                    <li>Use unique <code>offer_id</code> values per client</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CREATE OFFER WIZARD -->
+          <div ng-show="viewMode === 'create'">
+            <div class="wizard-steps">
+              <div
+                class="wizard-step"
+                ng-repeat="step in wizardSteps"
+                ng-class="{active: createStep === $index, done: $index < createStep}"
+                ng-click="goToStep($index)"
+              >
+                {{$index + 1}}. {{step}}
+              </div>
+            </div>
+
+            <!-- Step 1: Main Offer -->
+            <div class="create-panel" ng-if="createStep === 0">
+              <h4><i class="fas fa-tag"></i> Step 1 — Main Offer Details</h4>
+              <p style="color:#7f8c8d; margin-bottom:20px; font-size:14px;">
+                Configure the core offer. This creates a record in the <strong>offers</strong> table.
+              </p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Offer ID <span style="color:#e74c3c">*</span></label>
+                  <input type="text" ng-model="offerForm.offer_id" placeholder="e.g. MEGA150" />
+                  <div class="field-hint">Unique identifier — no spaces</div>
+                </div>
+                <div class="form-group">
+                  <label>Internal Name <span style="color:#e74c3c">*</span></label>
+                  <input type="text" ng-model="offerForm.name" placeholder="e.g. Mega Weekend Offer" />
+                </div>
+                <div class="form-group">
+                  <label>Display Title <span style="color:#e74c3c">*</span></label>
+                  <input type="text" ng-model="offerForm.title" placeholder="e.g. Flat ₹150 OFF" />
+                </div>
+                <div class="form-group">
+                  <label>Display Subtitle</label>
+                  <input type="text" ng-model="offerForm.subtitle" placeholder="e.g. Weekend special offer" />
+                </div>
+                <div class="form-group">
+                  <label>Discount Type <span style="color:#e74c3c">*</span></label>
+                  <select ng-model="offerForm.type">
+                    <option value="flat">Flat (₹ amount off)</option>
+                    <option value="percentage">Percentage (% off)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>{{offerForm.type === 'percentage' ? 'Discount %' : 'Discount Amount (₹)'}} <span style="color:#e74c3c">*</span></label>
+                  <input type="number" ng-model="offerForm.discount_value" placeholder="e.g. 100 or 20" />
+                </div>
+                <div class="form-group" ng-show="offerForm.type === 'percentage'">
+                  <label>Max Discount Cap (₹)</label>
+                  <input type="number" ng-model="offerForm.max_discount" placeholder="e.g. 150" />
+                  <div class="field-hint">Maximum discount for percentage offers</div>
+                </div>
+                <div class="form-group">
+                  <label>Minimum Cart Value (₹)</label>
+                  <input type="number" ng-model="offerForm.min_cart_value" placeholder="e.g. 500" />
+                </div>
+                <div class="form-group">
+                  <label>Priority</label>
+                  <input type="number" ng-model="offerForm.priority" placeholder="Higher = shown first" />
+                </div>
+                <div class="form-group">
+                  <label>Stackable</label>
+                  <select ng-model="offerForm.is_stackable">
+                    <option value="0">No — Non-stackable</option>
+                    <option value="1">Yes — Stackable</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Status</label>
+                  <select ng-model="offerForm.status">
+                    <option value="active">Active</option>
+                    <option value="expired">expired</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Client ID</label>
+                  <input type="text" ng-model="offerForm.client_id" placeholder="e.g. INDIGO, ING" />
+                </div>
+                <div class="form-group">
+                  <label>User Visibility</label>
+                  <select ng-model="offerForm.userVisibility">
+                    <option value="1">Visible to users</option>
+                    <option value="0">Hidden</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Start Time</label>
+                  <input type="datetime-local" ng-model="offerForm.start_time_local" />
+                </div>
+                <div class="form-group">
+                  <label>End Time</label>
+                  <input type="datetime-local" ng-model="offerForm.end_time_local" />
+                </div>
+                <div class="form-group full-width">
+                  <label>Description</label>
+                  <input type="text" ng-model="offerForm.description" placeholder="Internal description" />
+                </div>
+                <div class="form-group full-width">
+                  <label>Terms &amp; Conditions</label>
+                  <textarea ng-model="offerForm.tnc" placeholder="e.g. Applicable once per user. Minimum booking value required."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Rules -->
+            <div class="create-panel" ng-if="createStep === 1">
+              <h4><i class="fas fa-filter"></i> Step 2 — Targeting Rules <span class="optional-badge">Optional</span></h4>
+              <p style="color:#7f8c8d; margin-bottom:20px; font-size:14px;">
+                Define who can use this offer. Each rule is saved to <strong>offer_rules</strong>.
+              </p>
+
+              <div class="form-grid" style="margin-bottom:25px;">
+                <div class="form-group">
+                  <label>User Type</label>
+                  <select ng-model="rulePresets.user_type">
+                    <option value="">Any user</option>
+                    <option value="loggedin">Logged-in users only</option>
+                    <option value="guest">Guest users only</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Device Type</label>
+                  <select ng-model="rulePresets.device_type">
+                    <option value="">Any device</option>
+                    <option value="android">Android only</option>
+                    <option value="ios">iOS only</option>
+                    <option value="web">Web only</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Cab Partner</label>
+                  <input type="text" ng-model="rulePresets.cab_partner" placeholder="e.g. BLUSMART" />
+                </div>
+                <div class="form-group">
+                  <label>Cities (comma-separated)</label>
+                  <input type="text" ng-model="rulePresets.cities" placeholder="e.g. DELHI, MUMBAI, BLR" />
+                  <div class="field-hint">Leave empty for all cities</div>
+                </div>
+                <div class="form-group">
+                  <label>Exclude Cities (comma-separated)</label>
+                  <input type="text" ng-model="rulePresets.exclude_cities" placeholder="e.g. BLR" />
+                </div>
+                <div class="form-group">
+                  <label>New User Only</label>
+                  <select ng-model="rulePresets.is_new_user">
+                    <option value="">No restriction</option>
+                    <option value="true">New users only</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Max Ride Count (less than)</label>
+                  <input type="number" ng-model="rulePresets.ride_count" placeholder="e.g. 5" />
+                  <div class="field-hint">Offer for users with fewer than N rides</div>
+                </div>
+                <div class="form-group">
+                  <label>Customer IDs (comma-separated)</label>
+                  <input type="text" ng-model="rulePresets.customer_ids" placeholder="e.g. CUST001, 8271302014" />
+                </div>
+              </div>
+
+              <h5 style="color:#2c3e50; margin-bottom:15px;"><i class="fas fa-clock"></i> Schedule (Weekend / Time-based)</h5>
+              <div class="form-grid" style="margin-bottom:20px;">
+                <div class="form-group full-width">
+                  <label>Active Days</label>
+                  <div class="checkbox-group">
+                    <label ng-repeat="day in weekDays">
+                      <input type="checkbox" ng-model="rulePresets.scheduleDays[day]" /> {{day}}
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Start Time</label>
+                  <input type="time" ng-model="rulePresets.scheduleStart" />
+                </div>
+                <div class="form-group">
+                  <label>End Time</label>
+                  <input type="time" ng-model="rulePresets.scheduleEnd" />
+                  <div class="field-hint">Supports overnight (e.g. 22:00 to 02:00)</div>
+                </div>
+              </div>
+
+              <h5 style="color:#2c3e50; margin-bottom:15px;"><i class="fas fa-code"></i> Custom Rules</h5>
+              <div class="rule-card" ng-repeat="rule in customRules track by $index">
+                <div class="rule-card-header">
+                  <h5>Custom Rule #{{$index + 1}}</h5>
+                  <button type="button" class="btn btn-danger btn-sm" ng-click="removeCustomRule($index)">
+                    <i class="fas fa-trash"></i> Remove
+                  </button>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Rule Type</label>
+                    <select ng-model="rule.rule_type">
+                      <option value="user_type">user_type</option>
+                      <option value="device_type">device_type</option>
+                      <option value="city">city</option>
+                      <option value="cab_partner">cab_partner</option>
+                      <option value="cart_value">cart_value</option>
+                      <option value="ride_count">ride_count</option>
+                      <option value="is_new_user">is_new_user</option>
+                      <option value="current_time">current_time</option>
+                      <option value="customerId">customerId</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Operator</label>
+                    <select ng-model="rule.operator">
+                      <option value="=">=</option>
+                      <option value="!=">!=</option>
+                      <option value=">">&gt;</option>
+                      <option value=">=">&gt;=</option>
+                      <option value="<">&lt;</option>
+                      <option value="<=">&lt;=</option>
+                      <option value="IN">IN</option>
+                      <option value="NOT_IN">NOT_IN</option>
+                      <option value="SCHEDULE">SCHEDULE</option>
+                    </select>
+                  </div>
+                  <div class="form-group full-width">
+                    <label>Value (valid JSON)</label>
+                    <input type="text" ng-model="rule.value" placeholder='e.g. "loggedin" or ["DEL","BOM"]' />
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline" ng-click="addCustomRule()">
+                <i class="fas fa-plus"></i> Add Custom Rule
+              </button>
+            </div>
+
+            <!-- Step 3: Limits -->
+            <div class="create-panel" ng-if="createStep === 2">
+              <h4><i class="fas fa-chart-pie"></i> Step 3 — Budget &amp; Usage Limits <span class="optional-badge">Optional</span></h4>
+              <p style="color:#7f8c8d; margin-bottom:20px; font-size:14px;">
+                Control how many times the offer can be used. Saved to <strong>offer_limits</strong>.
+              </p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Total Budget (₹)</label>
+                  <input type="number" ng-model="limitsForm.total_budget" placeholder="e.g. 500000" />
+                </div>
+                <div class="form-group">
+                  <label>Total Usage Limit</label>
+                  <input type="number" ng-model="limitsForm.total_usage_limit" placeholder="e.g. 5000" />
+                </div>
+                <div class="form-group">
+                  <label>Per User Limit</label>
+                  <input type="number" ng-model="limitsForm.per_user_limit" placeholder="e.g. 1" />
+                </div>
+                <div class="form-group">
+                  <label>Per Day Limit</label>
+                  <input type="number" ng-model="limitsForm.per_day_limit" placeholder="e.g. 500" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Review & Submit -->
+            <div class="create-panel" ng-if="createStep === 3">
+              <h4><i class="fas fa-check-circle"></i> Step 4 — Review &amp; Create</h4>
+              <p style="color:#7f8c8d; margin-bottom:20px; font-size:14px;">
+                Review your configuration, then click Create Offer to submit all records via <strong>genericCreate</strong>.
+              </p>
+
+              <div class="review-section">
+                <h5><i class="fas fa-tag"></i> Main Offer</h5>
+                <div class="review-row" ng-repeat="row in reviewRows track by row.key">
+                  <span class="review-label">{{row.key}}</span>
+                  <span>{{row.val || '—'}}</span>
+                </div>
+              </div>
+
+              <div class="review-section" ng-if="reviewRules.length > 0">
+                <h5><i class="fas fa-filter"></i> Rules ({{reviewRules.length}})</h5>
+                <div class="review-row" ng-repeat="rule in reviewRules track by $index">
+                  <span class="review-label">{{rule.rule_type}} {{rule.operator}}</span>
+                  <span>{{rule.value}}</span>
+                </div>
+              </div>
+
+              <div class="review-section" ng-if="reviewHasLimits">
+                <h5><i class="fas fa-chart-pie"></i> Limits</h5>
+                <div class="review-row" ng-if="limitsForm.total_budget"><span class="review-label">Total Budget</span><span>₹{{limitsForm.total_budget}}</span></div>
+                <div class="review-row" ng-if="limitsForm.total_usage_limit"><span class="review-label">Total Usage</span><span>{{limitsForm.total_usage_limit}}</span></div>
+                <div class="review-row" ng-if="limitsForm.per_user_limit"><span class="review-label">Per User</span><span>{{limitsForm.per_user_limit}}</span></div>
+                <div class="review-row" ng-if="limitsForm.per_day_limit"><span class="review-label">Per Day</span><span>{{limitsForm.per_day_limit}}</span></div>
+              </div>
+
+              <div class="curl-box" style="margin-top:20px;">
+                <span class="curl-label"><i class="fas fa-terminal"></i> Sample cURL — Create Offer</span>{{createCurlSample}}
+              </div>
+
+              <div class="create-result" ng-if="createResults.length > 0">
+                <div
+                  class="create-result-item"
+                  ng-repeat="r in createResults"
+                  ng-class="r.status"
+                >
+                  <i class="fas" ng-class="r.status === 'success' ? 'fa-check-circle' : (r.status === 'error' ? 'fa-times-circle' : 'fa-minus-circle')"></i>
+                  <strong>{{r.table}}</strong> — {{r.message}}
+                </div>
+              </div>
+            </div>
+
+            <div class="wizard-nav">
+              <button type="button" class="btn btn-secondary" ng-click="prevStep()" ng-disabled="createStep === 0">
+                <i class="fas fa-arrow-left"></i> Previous
+              </button>
+              <div>
+                <button type="button" class="btn btn-outline" ng-click="resetCreateForm()" style="margin-right:10px;">
+                  <i class="fas fa-redo"></i> Reset
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  ng-click="createStep < 3 ? nextStep() : submitOffer()"
+                  ng-disabled="creating"
+                >
+                  <span ng-if="creating" class="loading"></span>
+                  <i class="fas" ng-class="createStep < 3 ? 'fa-arrow-right' : 'fa-rocket'" ng-if="!creating"></i>
+                  {{creating ? 'Creating...' : (createStep < 3 ? 'Next' : 'Create Offer')}}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div ng-show="viewMode === 'browse'">
+          <div class="table-tabs">
+            <button
+              type="button"
+              class="table-tab"
+              ng-repeat="t in offerTables"
+              ng-class="{active: filterData.table === t.value}"
+              ng-click="selectTable(t.value)"
+            >
+              {{t.label}}
+            </button>
+          </div>
+
+          <div class="filter-controls">
+            <div class="filter-row">
+              <div class="filter-item" style="flex: 0 0 250px;">
+                <label><i class="fas fa-database"></i> Table</label>
+                <select ng-model="filterData.table" ng-change="onTableChange()">
+                  <option ng-repeat="t in offerTables" value="{{t.value}}">{{t.label}}</option>
+                </select>
+              </div>
+
+              <div class="filter-item">
+                <label><i class="fas fa-search"></i> Filter Column</label>
+                <input
+                  type="text"
+                  ng-model="filterData.searchKey"
+                  placeholder="e.g. offer_id"
+                />
+              </div>
+
+              <div class="filter-item">
+                <label><i class="fas fa-filter"></i> Filter Value</label>
+                <input
+                  type="text"
+                  ng-model="filterData.searchValue"
+                  placeholder="Enter value"
+                />
+              </div>
+
+              <button
+                type="button"
+                ng-click="loadData()"
+                class="btn btn-primary"
+                ng-disabled="!filterData.table || loading"
+                style="height: fit-content; align-self: flex-end;"
+              >
+                <span ng-if="loading" class="loading"></span>
+                <i class="fas fa-sync-alt" ng-if="!loading"></i>
+                {{loading ? 'Loading...' : 'Search'}}
+              </button>
+            </div>
+
+            <div class="curl-box">
+              <span class="curl-label"><i class="fas fa-terminal"></i> Sample cURL — {{activeTableLabel}}</span>{{getCurlSample()}}
+            </div>
+          </div>
+
+          <div class="table-container" ng-if="tableData.length > 0">
+            <div class="tip-box">
+              <i class="fas fa-info-circle"></i> Table: <strong>{{filterData.table}}</strong> —
+              Showing {{tableData.length}} records • Total: {{paginationData.totalCount}}
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th ng-repeat="column in columns">{{column}}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="row in tableData">
+                  <td ng-repeat="column in columns" title="{{row[column]}}">
+                    {{row[column] !== null && row[column] !== undefined ? row[column] : '-'}}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="pagination-container">
+              <div class="pagination-info">
+                Page {{paginationData.page}} of {{paginationData.totalPages}} |
+                {{(paginationData.page - 1) * paginationData.limit + 1}}–
+                {{Math.min(paginationData.page * paginationData.limit, paginationData.totalCount)}}
+                of {{paginationData.totalCount}}
+              </div>
+
+              <div class="pagination">
+                <button type="button" ng-click="previousPage()" ng-disabled="paginationData.page <= 1">
+                  <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <span ng-repeat="page in getPageNumbers()">
+                  <button type="button" ng-if="page === '...'" disabled>{{page}}</button>
+                  <button
+                    type="button"
+                    ng-if="page !== '...'"
+                    ng-click="goToPage(page)"
+                    ng-class="{active: page === paginationData.page}"
+                  >
+                    {{page}}
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  ng-click="nextPage()"
+                  ng-disabled="paginationData.page >= paginationData.totalPages"
+                >
+                  Next <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+
+              <div>
+                <label style="display: inline-block; margin-right: 10px; color: #666; font-size: 13px;">
+                  Per page:
+                </label>
+                <select ng-model="paginationData.limit" ng-change="loadData()" class="limit-select">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div ng-if="tableData.length === 0 && !loading && filterData.table" class="no-data">
+            <i class="fas fa-inbox"></i>
+            <h4>No data available</h4>
+            <p>Adjust filters or click Search to load {{filterData.table}}</p>
+          </div>
+
+          <div ng-if="loading" class="no-data">
+            <div class="loading"></div>
+            <h4>Loading data...</h4>
+          </div>
+
+          <div ng-if="statusMsg" class="alert alert-info">
+            <i class="fas fa-info-circle"></i> {{statusMsg}}
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      angular
+        .module("offersManagementApp", [])
+        .controller("OffersManagementCtrl", function ($scope, $http, $q) {
+          $scope.isLoggedIn = !!localStorage.getItem("auth_token");
+          $scope.loginData = {};
+          $scope.loginMsg = "";
+          $scope.tableData = [];
+          $scope.columns = [];
+          $scope.statusMsg = "";
+          $scope.loading = false;
+          $scope.Math = window.Math;
+          $scope.showDocs = false;
+          $scope.docSections = {};
+          $scope.viewMode = "create";
+          $scope.createStep = 0;
+          $scope.creating = false;
+          $scope.createResults = [];
+          $scope.wizardSteps = [
+            "Offer",
+            "Rules",
+            "Limits",
+            "Review"
+          ];
+          $scope.weekDays = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+          ];
+
+          function defaultOfferForm() {
+            return {
+              offer_id: "",
+              name: "",
+              title: "",
+              subtitle: "",
+              description: "",
+              type: "flat",
+              discount_value: "",
+              max_discount: "",
+              min_cart_value: "",
+              priority: "10",
+              is_stackable: "0",
+              status: "active",
+              client_id: "INDIGO",
+              userVisibility: "1",
+              tnc: "",
+              start_time_local: "",
+              end_time_local: ""
+            };
+          }
+
+          function defaultRulePresets() {
+            var days = {};
+            $scope.weekDays.forEach(function (d) {
+              days[d] = false;
+            });
+            return {
+              user_type: "",
+              device_type: "",
+              cab_partner: "",
+              cities: "",
+              exclude_cities: "",
+              is_new_user: "",
+              ride_count: "",
+              customer_ids: "",
+              scheduleDays: days,
+              scheduleStart: "",
+              scheduleEnd: ""
+            };
+          }
+
+          $scope.offerForm = defaultOfferForm();
+          $scope.rulePresets = defaultRulePresets();
+          $scope.limitsForm = {
+            total_budget: "",
+            total_usage_limit: "",
+            per_user_limit: "1",
+            per_day_limit: ""
+          };
+          $scope.customRules = [];
+          $scope.reviewRows = [];
+          $scope.reviewRules = [];
+          $scope.reviewHasLimits = false;
+          $scope.createCurlSample = "";
+
+          $scope.offerTables = [
+            { value: "offers", label: "Offers" },
+            { value: "offer_rules", label: "Offer Rules" },
+            { value: "offer_limits", label: "Offer Limits" },
+            { value: "offer_transactions", label: "Transactions" }
+          ];
+
+          var storedOfferTable = localStorage.getItem("selected_offer_table") || "offers";
+          if (
+            !$scope.offerTables.some(function (t) {
+              return t.value === storedOfferTable;
+            })
+          ) {
+            storedOfferTable = "offers";
+          }
+
+          $scope.filterData = {
+            host:
+              localStorage.getItem("selected_host") ||
+              "https://devindigo.bookairportcab.com",
+            table: storedOfferTable,
+            searchKey: "",
+            searchValue: ""
+          };
+
+          $scope.paginationData = {
+            page: 1,
+            limit: 20,
+            totalCount: 0,
+            totalPages: 0
+          };
+
+          $scope.$watch("filterData.host", function (newVal, oldVal) {
+            if (newVal && newVal !== oldVal) {
+              localStorage.setItem("selected_host", newVal);
+            }
+          });
+
+          $scope.$watch("filterData.table", function (newVal) {
+            if (newVal) {
+              localStorage.setItem("selected_offer_table", newVal);
+              $scope.updateActiveLabel();
+            }
+          });
+
+          $scope.updateActiveLabel = function () {
+            var found = $scope.offerTables.find(function (t) {
+              return t.value === $scope.filterData.table;
+            });
+            $scope.activeTableLabel = found ? found.label : $scope.filterData.table;
+          };
+
+          $scope.updateActiveLabel();
+
+          $scope.toggleDocs = function () {
+            $scope.showDocs = !$scope.showDocs;
+          };
+
+          $scope.toggleDocSection = function (key) {
+            $scope.docSections[key] = !$scope.docSections[key];
+          };
+
+          $scope.goToStep = function (idx) {
+            if (idx >= 0 && idx < $scope.wizardSteps.length) {
+              $scope.createStep = idx;
+              if (idx === 3) {
+                refreshReview();
+              }
+            }
+          };
+
+          $scope.nextStep = function () {
+            if ($scope.createStep === 0 && !$scope.offerForm.offer_id) {
+              alert("Offer ID is required");
+              return;
+            }
+            if ($scope.createStep === 0 && !$scope.offerForm.name) {
+              alert("Internal name is required");
+              return;
+            }
+            if ($scope.createStep === 0 && !$scope.offerForm.title) {
+              alert("Display title is required");
+              return;
+            }
+            if ($scope.createStep === 0 && !$scope.offerForm.discount_value) {
+              alert("Discount value is required");
+              return;
+            }
+            if ($scope.createStep < $scope.wizardSteps.length - 1) {
+              $scope.createStep++;
+              if ($scope.createStep === 3) {
+                refreshReview();
+              }
+            }
+          };
+
+          $scope.prevStep = function () {
+            if ($scope.createStep > 0) {
+              $scope.createStep--;
+            }
+          };
+
+          $scope.addCustomRule = function () {
+            $scope.customRules.push({
+              rule_type: "user_type",
+              operator: "=",
+              value: ""
+            });
+          };
+
+          $scope.removeCustomRule = function (idx) {
+            $scope.customRules.splice(idx, 1);
+          };
+
+          $scope.resetCreateForm = function () {
+            $scope.offerForm = defaultOfferForm();
+            $scope.rulePresets = defaultRulePresets();
+            $scope.limitsForm = {
+              total_budget: "",
+              total_usage_limit: "",
+              per_user_limit: "1",
+              per_day_limit: ""
+            };
+            $scope.customRules = [];
+            $scope.createResults = [];
+            $scope.createStep = 0;
+            $scope.reviewRows = [];
+            $scope.reviewRules = [];
+            $scope.reviewHasLimits = false;
+            $scope.createCurlSample = "";
+          };
+
+          function formatDateTimeLocal(val) {
+            if (!val) return "";
+            var d = new Date(val);
+            if (isNaN(d.getTime())) return val;
+            var pad = function (n) {
+              return n < 10 ? "0" + n : "" + n;
+            };
+            return (
+              d.getFullYear() +
+              "-" +
+              pad(d.getMonth() + 1) +
+              "-" +
+              pad(d.getDate()) +
+              " " +
+              pad(d.getHours()) +
+              ":" +
+              pad(d.getMinutes()) +
+              ":" +
+              pad(d.getSeconds())
+            );
+          }
+
+          function parseList(str) {
+            if (!str || !str.trim()) return [];
+            return str
+              .split(/[,\n]+/)
+              .map(function (s) {
+                return s.trim();
+              })
+              .filter(Boolean);
+          }
+
+          function buildRules() {
+            var rules = [];
+            var oid = $scope.offerForm.offer_id;
+            var rp = $scope.rulePresets;
+
+            if (rp.user_type) {
+              rules.push({
+                offer_id: oid,
+                rule_type: "user_type",
+                operator: "=",
+                value: JSON.stringify(rp.user_type)
+              });
+            }
+            if (rp.device_type) {
+              rules.push({
+                offer_id: oid,
+                rule_type: "device_type",
+                operator: "=",
+                value: JSON.stringify(rp.device_type)
+              });
+            }
+            if (rp.cab_partner) {
+              rules.push({
+                offer_id: oid,
+                rule_type: "cab_partner",
+                operator: "=",
+                value: JSON.stringify(rp.cab_partner)
+              });
+            }
+            if (rp.cities) {
+              var cities = parseList(rp.cities);
+              if (cities.length) {
+                rules.push({
+                  offer_id: oid,
+                  rule_type: "city",
+                  operator: "IN",
+                  value: JSON.stringify(cities)
+                });
+              }
+            }
+            if (rp.exclude_cities) {
+              var exc = parseList(rp.exclude_cities);
+              if (exc.length) {
+                rules.push({
+                  offer_id: oid,
+                  rule_type: "city",
+                  operator: "NOT_IN",
+                  value: JSON.stringify(exc)
+                });
+              }
+            }
+            if (rp.is_new_user === "true") {
+              rules.push({
+                offer_id: oid,
+                rule_type: "is_new_user",
+                operator: "=",
+                value: "true"
+              });
+            }
+            if (rp.ride_count) {
+              rules.push({
+                offer_id: oid,
+                rule_type: "ride_count",
+                operator: "<",
+                value: String(rp.ride_count)
+              });
+            }
+            if (rp.customer_ids) {
+              var cids = parseList(rp.customer_ids);
+              if (cids.length) {
+                rules.push({
+                  offer_id: oid,
+                  rule_type: "customerId",
+                  operator: "IN",
+                  value: JSON.stringify(cids)
+                });
+              }
+            }
+            if ($scope.offerForm.min_cart_value) {
+              rules.push({
+                offer_id: oid,
+                rule_type: "cart_value",
+                operator: ">=",
+                value: String($scope.offerForm.min_cart_value)
+              });
+            }
+
+            var schedDays = [];
+            $scope.weekDays.forEach(function (d) {
+              if (rp.scheduleDays[d]) schedDays.push(d);
+            });
+            if (schedDays.length && rp.scheduleStart && rp.scheduleEnd) {
+              rules.push({
+                offer_id: oid,
+                rule_type: "current_time",
+                operator: "SCHEDULE",
+                value: JSON.stringify({
+                  days: schedDays,
+                  startTime: rp.scheduleStart,
+                  endTime: rp.scheduleEnd
+                })
+              });
+            }
+
+            $scope.customRules.forEach(function (r) {
+              if (r.rule_type && r.operator && r.value) {
+                rules.push({
+                  offer_id: oid,
+                  rule_type: r.rule_type,
+                  operator: r.operator,
+                  value: r.value
+                });
+              }
+            });
+
+            return rules;
+          }
+
+          function hasLimits() {
+            var l = $scope.limitsForm;
+            return !!(l.total_budget || l.total_usage_limit || l.per_user_limit || l.per_day_limit);
+          }
+
+          function buildOfferPayload(useLiveTimestamp) {
+            var f = $scope.offerForm;
+            var now = useLiveTimestamp
+              ? formatDateTimeLocal(new Date())
+              : "2026-06-02 12:16:58";
+            var data = {
+              offer_id: f.offer_id,
+              name: f.name,
+              title: f.title,
+              subtitle: f.subtitle || "",
+              description: f.description || "",
+              type: f.type,
+              discount_value: String(f.discount_value),
+              min_cart_value: f.min_cart_value ? String(f.min_cart_value) : "0",
+              priority: String(f.priority || "0"),
+              is_stackable: String(f.is_stackable),
+              status: f.status,
+              client_id: f.client_id || "ING",
+              userVisibility: String(f.userVisibility),
+              tnc: f.tnc || "",
+              created_at: now,
+              updated_at: now
+            };
+            if (f.type === "percentage" && f.max_discount) {
+              data.max_discount = String(f.max_discount);
+            }
+            if (f.start_time_local) {
+              data.start_time = formatDateTimeLocal(f.start_time_local);
+            }
+            if (f.end_time_local) {
+              data.end_time = formatDateTimeLocal(f.end_time_local);
+            }
+            return { table: "offers", data: data };
+          }
+
+          function refreshReview() {
+            var f = $scope.offerForm;
+            $scope.reviewRows = [
+              { key: "Offer ID", val: f.offer_id },
+              { key: "Name", val: f.name },
+              { key: "Title", val: f.title },
+              { key: "Subtitle", val: f.subtitle },
+              { key: "Type", val: f.type },
+              { key: "Discount Value", val: f.discount_value },
+              { key: "Max Discount", val: f.max_discount },
+              { key: "Min Cart Value", val: f.min_cart_value },
+              { key: "Priority", val: f.priority },
+              { key: "Stackable", val: f.is_stackable === "1" ? "Yes" : "No" },
+              { key: "Status", val: f.status },
+              { key: "Client ID", val: f.client_id },
+              { key: "Visibility", val: f.userVisibility === "1" ? "Visible" : "Hidden" },
+              { key: "Start Time", val: formatDateTimeLocal(f.start_time_local) },
+              { key: "End Time", val: formatDateTimeLocal(f.end_time_local) },
+              { key: "TnC", val: f.tnc }
+            ];
+            $scope.reviewRules = buildRules();
+            $scope.reviewHasLimits = hasLimits();
+
+            var host = $scope.filterData.host || "https://devindigo.bookairportcab.com";
+            var payload = buildOfferPayload(false);
+            var body = JSON.stringify(payload, null, 2);
+            $scope.createCurlSample =
+              "curl '" +
+              host +
+              "/api/v1/operations/genericCreate' \\\n" +
+              "  -H 'Accept: application/json' \\\n" +
+              "  -H 'Authorization: Bearer YOUR_TOKEN' \\\n" +
+              "  -H 'Content-Type: application/json' \\\n" +
+              "  --data-raw '" +
+              body.replace(/'/g, "'\\''") +
+              "'";
+          }
+
+          function genericCreate(table, data) {
+            var token = localStorage.getItem("auth_token");
+            return $http.post(
+              $scope.filterData.host + "/api/v1/operations/genericCreate",
+              { table: table, data: data },
+              {
+                headers: {
+                  Authorization: "Bearer " + token,
+                  "Content-Type": "application/json",
+                  correlationId: "6731c8eb-8509-49b8-b526-8184f8c917b3"
+                }
+              }
+            );
+          }
+
+          function pushResult(table, status, message) {
+            $scope.createResults.push({ table: table, status: status, message: message });
+          }
+
+          function createWithResult(table, data, label) {
+            return genericCreate(table, data).then(
+              function (res) {
+                pushResult(table, "success", (label || table) + " — " + (res.data?.message || "OK"));
+              },
+              function (err) {
+                pushResult(table, "error", (label || table) + " — " + (err.data?.message || "Failed"));
+              }
+            );
+          }
+
+          function runSequential(tasks) {
+            return tasks.reduce(function (prev, task) {
+              return prev.then(task);
+            }, $q.resolve());
+          }
+
+          $scope.submitOffer = function () {
+            if (!$scope.offerForm.offer_id) {
+              alert("Offer ID is required");
+              $scope.createStep = 0;
+              return;
+            }
+
+            $scope.creating = true;
+            $scope.createResults = [];
+            var tasks = [];
+
+            tasks.push(function () {
+              return createWithResult(
+                "offers",
+                buildOfferPayload(true).data,
+                "Main offer"
+              );
+            });
+
+            buildRules().forEach(function (rule) {
+              tasks.push(function () {
+                return createWithResult(
+                  "offer_rules",
+                  rule,
+                  rule.rule_type + " " + rule.operator
+                );
+              });
+            });
+
+            if (hasLimits()) {
+              tasks.push(function () {
+                var l = $scope.limitsForm;
+                var limitData = {
+                  offer_id: $scope.offerForm.offer_id,
+                  used_budget: "0"
+                };
+                if (l.total_budget) limitData.total_budget = String(l.total_budget);
+                if (l.total_usage_limit)
+                  limitData.total_usage_limit = String(l.total_usage_limit);
+                if (l.per_user_limit)
+                  limitData.per_user_limit = String(l.per_user_limit);
+                if (l.per_day_limit)
+                  limitData.per_day_limit = String(l.per_day_limit);
+                return createWithResult("offer_limits", limitData, "Limits");
+              });
+            }
+
+            runSequential(tasks).finally(function () {
+              $scope.creating = false;
+            });
+          };
+
+          var createSamples = {
+            offers: {
+              offer_id: "MEGA150",
+              name: "Mega Weekend Offer",
+              title: "Flat ₹150 OFF",
+              subtitle: "Weekend special offer",
+              type: "flat",
+              discount_value: "150",
+              min_cart_value: "700",
+              priority: "100",
+              is_stackable: "0",
+              status: "active",
+              client_id: "INDIGO",
+              userVisibility: "1",
+              start_time: "2026-05-01 00:00:00",
+              end_time: "2026-06-30 23:59:59",
+              tnc: "Applicable once per user"
+            },
+            offer_rules: {
+              offer_id: "MEGA150",
+              rule_type: "user_type",
+              operator: "=",
+              value: '"loggedin"'
+            },
+            offer_limits: {
+              offer_id: "MEGA150",
+              total_budget: "500000",
+              used_budget: "0",
+              total_usage_limit: "5000",
+              per_user_limit: "1",
+              per_day_limit: "500"
+            },
+            offer_transactions: {
+              offer_id: "MEGA150",
+              search_id: "SEARCH123",
+              original_price: "800",
+              discount: "150",
+              final_price: "650",
+              status: "applied",
+              customerId: "8271302014"
+            }
+          };
+
+          $scope.getCurlSample = function () {
+            var host = $scope.filterData.host || "https://devindigo.bookairportcab.com";
+            var table = $scope.filterData.table || "offers";
+            var limit = $scope.paginationData.limit || 20;
+            var page = $scope.paginationData.page || 1;
+            var filters = {};
+            var body;
+
+            if ($scope.filterData.searchKey && $scope.filterData.searchValue) {
+              filters[$scope.filterData.searchKey] = $scope.filterData.searchValue;
+            }
+
+            body = JSON.stringify(
+              { table: table, limit: parseInt(limit, 10), page: page, filters: filters },
+              null,
+              2
+            );
+
+            var searchCurl =
+              "# Search\n" +
+              "curl '" +
+              host +
+              "/api/v1/operations/genericSearch' \\\n" +
+              "  -H 'Accept: application/json' \\\n" +
+              "  -H 'Authorization: Bearer YOUR_TOKEN' \\\n" +
+              "  -H 'Content-Type: application/json' \\\n" +
+              "  --data-raw '" +
+              body.replace(/'/g, "'\\''") +
+              "'";
+
+            if (createSamples[table]) {
+              var createBody = JSON.stringify(
+                { table: table, data: createSamples[table] },
+                null,
+                2
+              );
+              return (
+                searchCurl +
+                "\n\n# Create\n" +
+                "curl '" +
+                host +
+                "/api/v1/operations/genericCreate' \\\n" +
+                "  -H 'Accept: application/json' \\\n" +
+                "  -H 'Authorization: Bearer YOUR_TOKEN' \\\n" +
+                "  -H 'Content-Type: application/json' \\\n" +
+                "  --data-raw '" +
+                createBody.replace(/'/g, "'\\''") +
+                "'"
+              );
+            }
+
+            return searchCurl;
+          };
+
+          $scope.selectTable = function (tableValue) {
+            $scope.filterData.table = tableValue;
+            $scope.onTableChange();
+          };
+
+          $scope.login = function () {
+            $scope.loginMsg = "";
+            $scope.loading = true;
+            localStorage.setItem("selected_host", $scope.filterData.host);
+
+            $http
+              .post(
+                $scope.filterData.host + "/auth/v1/login",
+                {
+                  username: $scope.loginData.username,
+                  password: $scope.loginData.password
+                },
+                {
+                  headers: {
+                    correlationId: "6731c8eb-8509-49b8-b526-8184f8c917b3"
+                  }
+                }
+              )
+              .then(
+                function (res) {
+                  if (res.data && res.data.token) {
+                    localStorage.setItem("auth_token", res.data.token);
+                    $scope.isLoggedIn = true;
+                    $scope.loginMsg = "Login successful!";
+                    $scope.loadData();
+                  } else {
+                    $scope.loginMsg = "Login failed: No token received";
+                  }
+                },
+                function (error) {
+                  $scope.loginMsg =
+                    "Login failed: " + (error.data?.message || "Unknown error");
+                }
+              )
+              .finally(function () {
+                $scope.loading = false;
+              });
+          };
+
+          $scope.logout = function () {
+            localStorage.removeItem("auth_token");
+            $scope.isLoggedIn = false;
+            $scope.tableData = [];
+            $scope.columns = [];
+            $scope.loginData = {};
+          };
+
+          $scope.loadData = function () {
+            if (!$scope.filterData.table) {
+              $scope.statusMsg = "Please select a table";
+              return;
+            }
+
+            $scope.statusMsg = "";
+            $scope.loading = true;
+            var token = localStorage.getItem("auth_token");
+            var filters = {};
+
+            if ($scope.filterData.searchKey && $scope.filterData.searchValue) {
+              filters[$scope.filterData.searchKey] = $scope.filterData.searchValue;
+            }
+
+            var requestData = {
+              table: $scope.filterData.table,
+              filters: filters,
+              page: $scope.paginationData.page,
+              limit: parseInt($scope.paginationData.limit, 10)
+            };
+
+            $http
+              .post(
+                $scope.filterData.host + "/api/v1/operations/genericSearch",
+                requestData,
+                {
+                  headers: {
+                    Authorization: "Bearer " + token,
+                    "Content-Type": "application/json",
+                    correlationId: "6731c8eb-8509-49b8-b526-8184f8c917b3"
+                  }
+                }
+              )
+              .then(
+                function (res) {
+                  if (res.data && res.data.data) {
+                    $scope.tableData = res.data.data;
+                    if ($scope.tableData.length > 0) {
+                      $scope.columns = Object.keys($scope.tableData[0]);
+                    } else {
+                      $scope.columns = [];
+                    }
+                    if (res.data.pagination) {
+                      $scope.paginationData.totalCount = res.data.pagination.totalCount;
+                      $scope.paginationData.totalPages = res.data.pagination.totalPages;
+                      $scope.paginationData.page = res.data.pagination.page;
+                      $scope.paginationData.limit = res.data.pagination.limit;
+                    }
+                    $scope.statusMsg =
+                      "Loaded " + $scope.tableData.length + " records from " + $scope.filterData.table;
+                  } else {
+                    $scope.statusMsg = "No data found";
+                    $scope.tableData = [];
+                    $scope.columns = [];
+                  }
+                },
+                function (error) {
+                  $scope.statusMsg =
+                    "Error: " + (error.data?.message || "Failed to load data");
+                  $scope.tableData = [];
+                }
+              )
+              .finally(function () {
+                $scope.loading = false;
+              });
+          };
+
+          $scope.previousPage = function () {
+            if ($scope.paginationData.page > 1) {
+              $scope.paginationData.page--;
+              $scope.loadData();
+            }
+          };
+
+          $scope.nextPage = function () {
+            if ($scope.paginationData.page < $scope.paginationData.totalPages) {
+              $scope.paginationData.page++;
+              $scope.loadData();
+            }
+          };
+
+          $scope.goToPage = function (pageNum) {
+            $scope.paginationData.page = pageNum;
+            $scope.loadData();
+          };
+
+          $scope.getPageNumbers = function () {
+            var pages = [];
+            var totalPages = $scope.paginationData.totalPages;
+            var currentPage = $scope.paginationData.page;
+            var maxPagesToShow = 5;
+
+            if (totalPages <= maxPagesToShow) {
+              for (var i = 1; i <= totalPages; i++) {
+                pages.push(i);
+              }
+            } else {
+              pages.push(1);
+              var startPage = Math.max(2, currentPage - 1);
+              var endPage = Math.min(totalPages - 1, currentPage + 1);
+              if (startPage > 2) {
+                pages.push("...");
+              }
+              for (var j = startPage; j <= endPage; j++) {
+                pages.push(j);
+              }
+              if (endPage < totalPages - 1) {
+                pages.push("...");
+              }
+              pages.push(totalPages);
+            }
+            return pages;
+          };
+
+          $scope.onTableChange = function () {
+            $scope.paginationData.page = 1;
+            $scope.tableData = [];
+            $scope.columns = [];
+            $scope.filterData.searchKey = "";
+            $scope.filterData.searchValue = "";
+            $scope.updateActiveLabel();
+            if ($scope.isLoggedIn && $scope.filterData.table) {
+              $scope.loadData();
+            }
+          };
+
+          if ($scope.isLoggedIn && $scope.filterData.table) {
+            $scope.loadData();
+          }
+        });
+    </script>
+  </body>
+</html>

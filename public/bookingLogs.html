@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Booking logs by brand</title>
+  <style>
+    :root {
+      --ink: #1c2430;
+      --muted: #5c6b7a;
+      --line: #e3e8ee;
+      --bg: #f4f6f8;
+      --card: #fff;
+      --accent: #1f6feb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    h1 { margin: 0 0 4px; font-size: 22px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+    .sub code { font-size: 12px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      margin: 0 auto 14px;
+      max-width: 1280px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d5dee8;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+    }
+    button {
+      padding: 9px 14px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid #d5dee8;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .actions { display: flex; gap: 8px; }
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      min-width: 140px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafbfd;
+    }
+    .stat span { display: block; font-size: 12px; color: var(--muted); }
+    .stat strong { font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+    th { background: #fafbfd; font-weight: 600; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #1d4e89;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.ok { background: #e8f7ee; color: #146c36; }
+    .badge.warn { background: #fff4e5; color: #8a5a00; }
+    .badge.bad { background: #fdecec; color: #9b1c1c; }
+    .flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .flag {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f1f3f5;
+      color: #667;
+    }
+    .flag.on { background: #e7f6ec; color: #146c36; }
+    .error {
+      color: #9b1c1c;
+      background: #fdecec;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .pager { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    a { color: #0b63d6; }
+    button.danger { background: #9b1c1c; }
+    pre.out {
+      margin: 0;
+      padding: 12px;
+      background: #0f1720;
+      color: #e8eef6;
+      border-radius: 8px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .wide { grid-column: span 2; }
+    @media (max-width: 700px) { .wide { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Booking logs</h1>
+    <div style="margin-bottom:16px;max-width:480px">
+      <label for="apiHost">Host</label>
+      <select id="apiHost">
+        <option value="https://ing-api-dev.bookairportcab.com">https://ing-api-dev.bookairportcab.com</option>
+        <option value="https://ing-api-prod.bookairportcab.com" selected>https://ing-api-prod.bookairportcab.com</option>
+      </select>
+    </div>
+    <p class="sub">POST <code>/api/v1/booking/bookingLogs</code></p>
+    <form id="filters" class="filters">
+      <div>
+        <label for="brand">Brand</label>
+        <select id="brand" name="brand">
+          <option value="indigo">indigo</option>
+          <option value="yatra" selected>yatra</option>
+          <option value="ixigo">ixigo</option>
+          <option value="travelvip">travelvip</option>
+          <option value="railyatri">railyatri</option>
+        </select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="">All</option>
+          <option value="PREBOOK">PREBOOK</option>
+          <option value="PAYMENT_CAPTURED">PAYMENT_CAPTURED</option>
+          <option value="BOOKING_CONFIRMED" selected>BOOKING_CONFIRMED</option>
+          <option value="CANCELLED">CANCELLED</option>
+          <option value="COMPLETED">COMPLETED</option>
+          <option value="CAB_BOOKING_FAILED">CAB_BOOKING_FAILED</option>
+        </select>
+      </div>
+      <div>
+        <label for="startDate">Start date</label>
+        <input id="startDate" name="startDate" type="date" required />
+      </div>
+      <div>
+        <label for="endDate">End date</label>
+        <input id="endDate" name="endDate" type="date" required />
+      </div>
+      <div>
+        <label for="startHour">Start hour</label>
+        <input id="startHour" name="startHour" type="number" min="0" max="23" value="0" />
+      </div>
+      <div>
+        <label for="endHour">End hour</label>
+        <input id="endHour" name="endHour" type="number" min="0" max="23" value="23" />
+      </div>
+      <div>
+        <label for="limit">Limit</label>
+        <select id="limit" name="limit">
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <div class="wide">
+        <label for="bookingId">Booking ID</label>
+        <input id="bookingId" name="bookingId" type="text" placeholder="Optional" />
+      </div>
+      <div>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" />
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" />
+      </div>
+      <div class="actions">
+        <button type="button" class="ghost" id="signInBtn">Sign in</button>
+        <button type="submit" id="searchBtn">Search</button>
+      </div>
+    </form>
+    <p class="muted" id="authState" style="margin:12px 0 0">Sign in to get a token from POST /auth/v1/login. Search sends it as Authorization: Bearer.</p>
+  </div>
+
+  <div class="card" id="ivr">
+    <h1>IVR test calls</h1>
+    <p class="sub">
+      From <code>routes/ivrRoutes.js</code>. These calls do not use the login token.
+      Passthru searches every brand database and returns JSON for the 200 / 302 branch.
+      Greeting returns plain text for the Exotel Read text box.
+      Cancel and invoice write on the brand that owns the booking.
+    </p>
+    <form id="ivrForm" class="filters">
+      <div class="wide">
+        <label for="ivrHost">Host</label>
+        <select id="ivrHost">
+          <option value="https://ing-api-dev.bookairportcab.com">https://ing-api-dev.bookairportcab.com</option>
+          <option value="https://ing-api-prod.bookairportcab.com" selected>https://ing-api-prod.bookairportcab.com</option>
+        </select>
+      </div>
+      <div>
+        <label for="ivrMobile">Caller mobile</label>
+        <input id="ivrMobile" type="tel" placeholder="10-digit mobile" autocomplete="off" />
+      </div>
+      <div>
+        <label for="ivrCallSid">CallSid</label>
+        <input id="ivrCallSid" type="text" placeholder="Optional" autocomplete="off" />
+      </div>
+      <div>
+        <label for="ivrBookingId">Booking ID</label>
+        <input id="ivrBookingId" type="text" placeholder="Required for invoice" autocomplete="off" />
+      </div>
+      <div>
+        <label for="ivrBrand">Brand hint</label>
+        <select id="ivrBrand">
+          <option value="">Any</option>
+          <option value="indigo">indigo</option>
+          <option value="yatra">yatra</option>
+          <option value="ixigo">ixigo</option>
+          <option value="travelvip">travelvip</option>
+          <option value="railyatri">railyatri</option>
+        </select>
+      </div>
+      <div>
+        <label for="ivrMenu">Menu option</label>
+        <select id="ivrMenu">
+          <option value="1">1 modify</option>
+          <option value="4">4 refund</option>
+          <option value="5">5 complaint</option>
+          <option value="9" selected>9 talk to support</option>
+        </select>
+      </div>
+      <div>
+        <label for="ivrSecret">Webhook secret</label>
+        <input id="ivrSecret" type="password" placeholder="Optional" autocomplete="off" />
+      </div>
+      <div class="actions" style="flex-wrap:wrap;grid-column:1/-1">
+        <button type="button" id="passthruGet">GET passthru</button>
+        <button type="button" class="ghost" id="passthruPost">POST passthru</button>
+        <button type="button" id="greetingGet">GET greeting</button>
+        <button type="button" id="callbackGet">GET callback</button>
+        <button type="button" class="ghost" id="callbackPost">POST callback</button>
+        <button type="button" class="danger" id="cancelBtn">POST cancel</button>
+        <button type="button" class="danger" id="invoiceBtn">POST invoice</button>
+      </div>
+    </form>
+    <p class="muted" style="margin:12px 0 0">
+      GET/POST <code>/ivr/exotel/passthru</code> ·
+      GET <code>/ivr/exotel/greeting</code> ·
+      GET/POST <code>/ivr/exotel/callback</code> ·
+      POST <code>/ivr/exotel/menu/2/cancel</code> ·
+      POST <code>/ivr/exotel/menu/3/invoice</code>
+    </p>
+  </div>
+
+  <div class="card" id="ivrResults" hidden>
+    <pre class="out" id="ivrOut"></pre>
+  </div>
+
+  <div class="card" id="results" hidden>
+    <div id="error" class="error" hidden></div>
+    <div class="summary" id="summary"></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Booking</th>
+            <th>Customer</th>
+            <th>Trip</th>
+            <th>When</th>
+            <th>Fare</th>
+            <th>Cab</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button type="button" class="ghost" id="prev">Previous</button>
+      <span class="muted" id="pageLabel"></span>
+      <button type="button" class="ghost" id="next">Next</button>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = "booking_logs_token";
+    const HOST_KEY = "booking_logs_host";
+    const DEFAULT_HOST = "https://ing-api-prod.bookairportcab.com";
+    const hostSelect = document.getElementById("apiHost");
+    const savedHost = localStorage.getItem(HOST_KEY);
+    if (savedHost && hostSelect.querySelector('option[value="' + savedHost + '"]')) {
+      hostSelect.value = savedHost;
+    }
+
+    function apiHost() {
+      return hostSelect.value || DEFAULT_HOST;
+    }
+
+    function apiUrl() {
+      return apiHost() + "/api/v1/booking/bookingLogs";
+    }
+    let authToken = sessionStorage.getItem(TOKEN_KEY) || "";
+    const form = document.getElementById("filters");
+    const results = document.getElementById("results");
+    const errorBox = document.getElementById("error");
+    const summary = document.getElementById("summary");
+    const rows = document.getElementById("rows");
+    const pageLabel = document.getElementById("pageLabel");
+    const searchBtn = document.getElementById("searchBtn");
+    let page = 1;
+    let totalPages = 0;
+
+    function istDate(offsetDays) {
+      const now = new Date(Date.now() + (offsetDays || 0) * 86400000);
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(now);
+      return parts;
+    }
+
+    document.getElementById("startDate").value = istDate(-1);
+    document.getElementById("endDate").value = istDate(-1);
+
+    function uuid() {
+      return crypto.randomUUID();
+    }
+
+    function text(value) {
+      if (value == null || value === "") return "—";
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function money(value) {
+      if (value == null || value === "") return "—";
+      return "₹" + Number(value).toLocaleString("en-IN");
+    }
+
+    function when(value) {
+      if (!value) return "—";
+      const raw = String(value).trim();
+      const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (match) {
+        return match[1] + "-" + match[2] + "-" + match[3] + " " + match[4] + ":" + match[5] + ":" + (match[6] || "00");
+      }
+      return raw;
+    }
+
+    function statusClass(status) {
+      if (status === "COMPLETED" || status === "BOOKING_CONFIRMED") return "ok";
+      if (status === "CANCELLED" || status === "CAB_BOOKING_FAILED") return "bad";
+      return "warn";
+    }
+
+    function flag(label, on) {
+      return '<span class="flag' + (on ? " on" : "") + '">' + label + "</span>";
+    }
+
+    function stat(label, value) {
+      return '<div class="stat"><span>' + label + "</span><strong>" + text(value) + "</strong></div>";
+    }
+
+    function render(payload) {
+      const data = payload.data || {};
+      const bookings = Array.isArray(data.bookings) ? data.bookings : [];
+      const brand = payload.brand || document.getElementById("brand").value;
+      totalPages = Number(data.totalPages) || 0;
+      page = Number(data.currentPage) || page;
+
+      summary.innerHTML = [
+        stat("Brand database", brand),
+        stat("Records", data.totalRecords),
+        stat("Page", page + " / " + (totalPages || "—")),
+        stat("On this page", bookings.length),
+        stat("Message", payload.message),
+      ].join("");
+
+      rows.innerHTML = bookings.map(function (booking) {
+        const route = text(booking.sourceName) + " → " + text(booking.destinationName);
+        return (
+          "<tr>" +
+            "<td><strong>" + text(booking.bookingId) + "</strong>" +
+              '<div class="muted">' + text(booking.cityCode) + " · " + text(booking.travelType) + " · " + text(booking.journeyType) + "</div>" +
+              '<div><span class="badge ' + statusClass(booking.status) + '">' + text(booking.status) + "</span></div>" +
+            "</td>" +
+            "<td><strong>" + text(booking.userName) + "</strong>" +
+              '<div class="muted">' + text(booking.mobile) + "</div>" +
+              '<div class="muted">' + text(booking.email) + "</div>" +
+            "</td>" +
+            "<td>" + route +
+              '<div class="muted">' + text(booking.kilometer) + " km</div>" +
+            "</td>" +
+            "<td>" + when(booking.pickupTime) +
+              '<div class="muted">Booked ' + text(booking.bookingTime) + "</div>" +
+            "</td>" +
+            "<td><strong>" + money(booking.totalFare) + "</strong>" +
+              '<div class="muted">Paid ' + money(booking.paidAmount) + " · Due " + money(booking.remainingAmount) + "</div>" +
+              '<div class="muted">' + text(booking.paymentStatus) + " · " + text(booking.payType) + "</div>" +
+            "</td>" +
+            "<td>" + text(booking.cabPartner) + " · " + text(booking.vehicleType) +
+              '<div class="muted">' + text(booking.partnerName) + (booking.domain ? " · " + booking.domain : "") + "</div>" +
+              '<div class="flags">' +
+                flag("Assigned", booking.cabAssigned) +
+                flag("Left", booking.cabLeftForPickup) +
+                flag("Arrived", booking.cabReachedSource) +
+                flag("Started", booking.cabTripStarted) +
+                flag("Ended", booking.cabTripEnd) +
+              "</div>" +
+              (booking.trackingUrl ? '<div><a href="' + booking.trackingUrl + '" target="_blank" rel="noopener">Tracking</a></div>' : "") +
+            "</td>" +
+          "</tr>"
+        );
+      }).join("");
+
+      if (!bookings.length) {
+        rows.innerHTML = '<tr><td colspan="6" class="muted">No bookings for this brand and filter.</td></tr>';
+      }
+
+      pageLabel.textContent = "Page " + page + (totalPages ? " of " + totalPages : "");
+      document.getElementById("prev").disabled = page <= 1;
+      document.getElementById("next").disabled = !totalPages || page >= totalPages;
+    }
+
+    function readToken(payload) {
+      const token = payload && payload.token;
+      if (typeof token === "string" && token) return token;
+      if (token && typeof token.indigo === "string") return token.indigo;
+      return "";
+    }
+
+    if (authToken) {
+      document.getElementById("authState").textContent = "Signed in. Token is ready for Search.";
+    }
+
+    async function search(nextPage) {
+      if (!authToken) {
+        results.hidden = false;
+        errorBox.hidden = false;
+        errorBox.textContent = "Sign in first. Booking logs needs the token from /auth/v1/login.";
+        return;
+      }
+      page = nextPage || 1;
+      errorBox.hidden = true;
+      results.hidden = false;
+      searchBtn.disabled = true;
+      searchBtn.textContent = "Searching…";
+
+      const body = {
+        bookingId: document.getElementById("bookingId").value.trim(),
+        page: page,
+        limit: Number(document.getElementById("limit").value),
+        startHour: Number(document.getElementById("startHour").value),
+        endHour: Number(document.getElementById("endHour").value),
+        status: document.getElementById("status").value,
+        startDate: document.getElementById("startDate").value,
+        endDate: document.getElementById("endDate").value,
+        brand: document.getElementById("brand").value,
+      };
+
+      const headers = {
+        "Content-Type": "application/json",
+        correlationId: uuid(),
+      };
+      if (authToken) headers.Authorization = "Bearer " + authToken;
+
+      try {
+        localStorage.setItem(HOST_KEY, apiHost());
+        const response = await fetch(apiUrl(), {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(body),
+        });
+        const payload = await response.json().catch(function () { return {}; });
+        if (!response.ok || payload.status === "failure") {
+          throw new Error(payload.message || payload.error || ("Request failed (" + response.status + ")"));
+        }
+        render(payload);
+      } catch (error) {
+        summary.innerHTML = "";
+        rows.innerHTML = "";
+        pageLabel.textContent = "";
+        errorBox.hidden = false;
+        errorBox.textContent = error.message || "Could not load booking logs.";
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = "Search";
+      }
+    }
+
+    document.getElementById("signInBtn").addEventListener("click", async function () {
+      const button = document.getElementById("signInBtn");
+      const authState = document.getElementById("authState");
+      button.disabled = true;
+      authState.textContent = "Signing in…";
+      try {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        if (!username || !password) {
+          throw new Error("Username and password are required.");
+        }
+        const host = apiHost();
+        localStorage.setItem(HOST_KEY, host);
+        const response = await fetch(host + "/auth/v1/login", {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username: username, password: password }),
+        });
+        const payload = await response.json().catch(function () { return {}; });
+        const token = readToken(payload);
+        if (!response.ok || !token) {
+          throw new Error(payload.message || "Login did not return a token.");
+        }
+        authToken = token;
+        sessionStorage.setItem(TOKEN_KEY, token);
+        authState.textContent = "Signed in as " + username + ". Token saved for this browser tab.";
+      } catch (error) {
+        authToken = "";
+        sessionStorage.removeItem(TOKEN_KEY);
+        authState.textContent = error.message || "Sign in failed.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      search(1);
+    });
+    document.getElementById("prev").addEventListener("click", function () {
+      if (page > 1) search(page - 1);
+    });
+    document.getElementById("next").addEventListener("click", function () {
+      if (!totalPages || page < totalPages) search(page + 1);
+    });
+
+    const ivrOut = document.getElementById("ivrOut");
+    const ivrResults = document.getElementById("ivrResults");
+    const IVR_HOST_KEY = "ivr_test_host";
+    const ivrHostSelect = document.getElementById("ivrHost");
+    const savedIvrHost = localStorage.getItem(IVR_HOST_KEY);
+    if (savedIvrHost && ivrHostSelect.querySelector('option[value="' + savedIvrHost + '"]')) {
+      ivrHostSelect.value = savedIvrHost;
+    }
+
+    function ivrValue(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function ivrFields() {
+      return {
+        CallFrom: ivrValue("ivrMobile"),
+        From: ivrValue("ivrMobile"),
+        callerMobile: ivrValue("ivrMobile"),
+        CallSid: ivrValue("ivrCallSid"),
+        callSid: ivrValue("ivrCallSid"),
+        bookingId: ivrValue("ivrBookingId"),
+        brand: ivrValue("ivrBrand"),
+        menuOption: ivrValue("ivrMenu"),
+      };
+    }
+
+    async function ivrCall(method, path, options) {
+      const fields = ivrFields();
+      if (options.needsMobile && !fields.callerMobile) {
+        ivrResults.hidden = false;
+        ivrOut.textContent = "Caller mobile is required.";
+        return;
+      }
+      if (options.needsBooking && !fields.bookingId) {
+        ivrResults.hidden = false;
+        ivrOut.textContent = "Booking ID is required.";
+        return;
+      }
+      if (options.confirmText && !window.confirm(options.confirmText)) return;
+
+      const host = ivrValue("ivrHost").replace(/\/$/, "");
+      localStorage.setItem(IVR_HOST_KEY, host);
+      const query = new URLSearchParams();
+      Object.keys(options.query || {}).forEach(function (key) {
+        if (fields[key]) query.set(key, fields[key]);
+      });
+      const url = host + path + (query.toString() ? "?" + query.toString() : "");
+      const headers = { accept: "application/json" };
+      const secret = ivrValue("ivrSecret");
+      if (secret) headers["x-exotel-ivr-secret"] = secret;
+      let body;
+      if (method !== "GET") {
+        headers["Content-Type"] = "application/json";
+        body = {};
+        Object.keys(options.body || {}).forEach(function (key) {
+          if (fields[key]) body[key] = fields[key];
+        });
+      }
+
+      ivrResults.hidden = false;
+      ivrOut.textContent = method + " " + url + "\n\nCalling…";
+      try {
+        const response = await fetch(url, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined });
+        const raw = await response.text();
+        let pretty = raw;
+        try { pretty = JSON.stringify(JSON.parse(raw), null, 2); } catch (e) { /* keep text */ }
+        ivrOut.textContent = method + " " + url + "\nHTTP " + response.status + "\n\n" + pretty;
+      } catch (error) {
+        ivrOut.textContent = method + " " + url + "\n\n" + (error.message || "Request failed.");
+      }
+    }
+
+    document.getElementById("passthruGet").addEventListener("click", function () {
+      ivrCall("GET", "/ivr/exotel/passthru", { needsMobile: true, query: { CallFrom: 1, CallSid: 1 } });
+    });
+    document.getElementById("passthruPost").addEventListener("click", function () {
+      ivrCall("POST", "/ivr/exotel/passthru", { needsMobile: true, body: { CallFrom: 1, CallSid: 1 } });
+    });
+    document.getElementById("greetingGet").addEventListener("click", function () {
+      ivrCall("GET", "/ivr/exotel/greeting", { needsMobile: true, query: { CallFrom: 1, From: 1, CallSid: 1 } });
+    });
+    document.getElementById("callbackGet").addEventListener("click", function () {
+      ivrCall("GET", "/ivr/exotel/callback", {
+        needsMobile: true,
+        query: { callerMobile: 1, menuOption: 1, bookingId: 1, brand: 1, callSid: 1 },
+      });
+    });
+    document.getElementById("callbackPost").addEventListener("click", function () {
+      ivrCall("POST", "/ivr/exotel/callback", {
+        needsMobile: true,
+        body: { callerMobile: 1, menuOption: 1, bookingId: 1, brand: 1, callSid: 1 },
+      });
+    });
+    document.getElementById("cancelBtn").addEventListener("click", function () {
+      ivrCall("POST", "/ivr/exotel/menu/2/cancel", {
+        needsMobile: true,
+        confirmText: "This cancels a confirmed booking when exactly one match exists. Continue?",
+        body: { callerMobile: 1, bookingId: 1, callSid: 1 },
+      });
+    });
+    document.getElementById("invoiceBtn").addEventListener("click", function () {
+      ivrCall("POST", "/ivr/exotel/menu/3/invoice", {
+        needsBooking: true,
+        confirmText: "This emails and WhatsApps the invoice for this booking. Continue?",
+        body: { bookingId: 1, brand: 1 },
+      });
+    });
+  </script>
+</body>
+</html>
