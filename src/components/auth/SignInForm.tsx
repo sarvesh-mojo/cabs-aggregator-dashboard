@@ -21,6 +21,7 @@ import {
   isYatraOpsUser,
   resolveLockedCabPartners,
 } from "../../utils/partnerAccess";
+import AppVersion from "../common/AppVersion";
 
 // Type for form data
 interface FormData {
@@ -289,6 +290,7 @@ const SignInForm: React.FC = () => {
             </Link>
           </p>
         </div>
+        <AppVersion />
       </div>
     </div>
   );

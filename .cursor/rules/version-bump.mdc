@@ -1,0 +1,15 @@
+---
+description: Bump package.json version on every commit so deploy verification works
+alwaysApply: true
+---
+
+# Version bump on every commit
+
+Every commit in this repo must increment `package.json` `version` (semver patch by default, e.g. `2.0.3` → `2.0.4`).
+
+The UI shows this version on the login screen and in the app header (`AppVersion` / `__APP_VERSION__` from Vite). Use it to confirm a deploy landed.
+
+When committing:
+1. Bump `package.json` version in the same change (or as part of the commit).
+2. Do not skip the bump for “docs-only” or tiny fixes — every commit that ships to `main` needs a new version.
+3. Mention the new version in the commit message when practical (e.g. `… (v2.0.4)`).
