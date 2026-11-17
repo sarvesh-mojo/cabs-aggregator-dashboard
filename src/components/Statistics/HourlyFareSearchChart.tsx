@@ -401,7 +401,7 @@ const fetchHourlyData = useCallback(async (signal?: AbortSignal) => {
                 const percentage = props.payload[`${name}_percentage`];
                 return [`${value} (${percentage}%)`, name];
               }}
-              labelFormatter={(label) => formatHour(label)}
+              labelFormatter={(label) => formatHour(Number(label))}
               // itemStyle={{ color: "#000000" }} // colur text black on hover
             />
 
