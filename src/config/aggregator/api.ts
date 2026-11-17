@@ -1,4 +1,26 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+/** Local Vite proxies /auth|/admin to :4100. Deployed dashboard has no proxy. */
+function resolveApiBase(): string {
+  const fromEnv = String(import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+  if (fromEnv) return fromEnv;
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (
+      host === "aggregator-dashboard.bookairportcab.com" ||
+      host.endsWith(".aggregator-dashboard.bookairportcab.com")
+    ) {
+      return "https://api-aggregator.bookairportcab.com";
+    }
+  }
+  return "";
+}
+
+const API_BASE = resolveApiBase();
+
+function aggregatorUrl(path: string): string {
+  const clean = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${clean}`;
+}
 
 export type AggregatorLoginResult = {
   token: string;
@@ -11,7 +33,7 @@ export async function aggregatorLogin(
   username: string,
   password: string
 ): Promise<AggregatorLoginResult> {
-  const res = await fetch(`${API_BASE}/auth/v1/login`, {
+  const res = await fetch(aggregatorUrl("/auth/v1/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
@@ -29,7 +51,7 @@ async function authedGet(path: string, token: string, query: Record<string, unkn
       .filter(([, v]) => v != null && v !== "")
       .map(([k, v]) => [k, String(v)])
   ).toString();
-  const url = `${API_BASE}${path}${qs ? `?${qs}` : ""}`;
+  const url = `${aggregatorUrl(path)}${qs ? `?${qs}` : ""}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
