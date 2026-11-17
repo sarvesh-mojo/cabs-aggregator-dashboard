@@ -18,6 +18,31 @@ export interface LoginResponse {
 }
 
 /**
+ * Analytics/CX APIs are viaVIP_API — need a viaVIP JWT, not the aggregator token.
+ * Same username/password must exist in viaVIP `users` for Dashboard to load data.
+ */
+async function viaVipLogin(
+  username: string,
+  password: string
+): Promise<string | null> {
+  const base = resolveViaDomain();
+  if (!base) return null;
+  try {
+    const res = await fetch(`${base}/auth/v1/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return null;
+    const token = typeof data?.token === "string" ? data.token : null;
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Prefer cabs-aggregator login (JWT ADMIN/OPS).
  * Falls back to legacy management /users/login when aggregator rejects
  * and VITE_USE_LEGACY_LOGIN is not "false".
@@ -38,6 +63,12 @@ export const LoginAPI = async (
 
     const partnerKey = "aggregator";
     const viaHost = resolveViaDomain();
+    // Prefer server-minted viaVIP token from aggregator; else same-password viaVIP login.
+    const viaToken =
+      (typeof agg.viaVipToken === "string" && agg.viaVipToken) ||
+      (await viaVipLogin(payload.username, payload.password));
+    // Prefer viaVIP token for analytics host; keep aggregator JWT as session login_JWT.
+    const analyticsAuth = viaToken || agg.token;
 
     return {
       status: 200,
@@ -51,11 +82,12 @@ export const LoginAPI = async (
       data: [
         {
           [partnerKey]: {
-            auth: agg.token,
+            auth: analyticsAuth,
             host: viaHost,
             user_rights: rightsForClientType(clientType),
             brand: agg.brand || "via",
             client_type: clientType,
+            via_auth: Boolean(viaToken),
           },
         },
       ],

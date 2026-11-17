@@ -47,6 +47,24 @@ export const isRequestCanceled = (error: unknown): boolean => {
   );
 };
 
+/** Aggregator dashboard sessions must not hard-bounce to /login on viaVIP 403. */
+function isAggregatorSession(state: RootState): boolean {
+  const partners = state.authStore?.login_partners || [];
+  return partners.some(
+    (p: string) => String(p || "").toLowerCase() === "aggregator"
+  );
+}
+
+function shouldHardRedirectToLogin(
+  status: number | undefined,
+  redirectOnForbidden = true
+): boolean {
+  if (!redirectOnForbidden || status !== 403) return false;
+  const state = store.getState() as RootState;
+  if (isAggregatorSession(state)) return false;
+  return true;
+}
+
 /**
  * Builds an Axios instance based on partner, token, and whether it’s multipart.
  */
@@ -87,11 +105,17 @@ const getApiInstance = (partner: string, multipart = false): AxiosInstance => {
   }
   else {
     const partnerData = partner_wise_data?.[0]?.[partner];
+    const aggregatorData = partner_wise_data?.[0]?.aggregator;
     const isPartner = partnerData && Object.keys(partnerData).length > 0;
 
     if (isPartner) {
       token = partnerData.auth;
       apiDomain = String(partnerData.host || "").replace(/\/$/, "") || resolveViaDomain();
+    } else if (aggregatorData?.auth) {
+      // Aggregator login only stores aggregator.* — reuse its viaVIP token/host.
+      token = aggregatorData.auth;
+      apiDomain =
+        String(aggregatorData.host || "").replace(/\/$/, "") || resolveViaDomain();
     } else {
       token = login_JWT;
       apiDomain = resolveViaDomain();
@@ -160,9 +184,11 @@ if (!useRead) {
     console.error(axiosErr.response?.data ?? axiosErr.message);
 
     if (
-      options?.redirectOnForbidden !== false &&
-      axiosErr.code === "ERR_BAD_REQUEST" &&
-      axiosErr.response?.status === 403
+      shouldHardRedirectToLogin(
+        axiosErr.response?.status,
+        options?.redirectOnForbidden !== false
+      ) &&
+      axiosErr.code === "ERR_BAD_REQUEST"
     ) {
       window.location.href = "/login";
     }
@@ -193,8 +219,8 @@ export async function PostMojoEventAPI<TRes, TBody = any>(
     console.error(axiosErr.response?.data ?? axiosErr.message);
 
     if (
-      axiosErr.code === "ERR_BAD_REQUEST" &&
-      axiosErr.response?.status === 403
+      shouldHardRedirectToLogin(axiosErr.response?.status) &&
+      axiosErr.code === "ERR_BAD_REQUEST"
     ) {
       window.location.href = "/login";
     }
@@ -289,9 +315,11 @@ if (!useRead) {
     if (isRequestCanceled(error)) throw error;
     const axiosErr = error as AxiosError;
     if (
-      !options?.skipAuthRedirect &&
-      axiosErr.code === "ERR_BAD_REQUEST" &&
-      axiosErr.response?.status === 403
+      shouldHardRedirectToLogin(
+        axiosErr.response?.status,
+        !options?.skipAuthRedirect
+      ) &&
+      axiosErr.code === "ERR_BAD_REQUEST"
     ) {
       window.location.href = "/login";
     }
@@ -315,8 +343,8 @@ export async function PutAPI<TRes, TBody = any>(
     // console.error(axiosErr.response?.data ?? axiosErr.message);
 
     if (
-      axiosErr.code === "ERR_BAD_REQUEST" &&
-      axiosErr.response?.status === 403
+      shouldHardRedirectToLogin(axiosErr.response?.status) &&
+      axiosErr.code === "ERR_BAD_REQUEST"
     ) {
       window.location.href = "/login";
     }
@@ -346,8 +374,8 @@ export async function DeleteAPI<TRes, TBody = any>(
     // console.error(axiosErr.response?.data ?? axiosErr.message);
 
     if (
-      axiosErr.code === "ERR_BAD_REQUEST" &&
-      axiosErr.response?.status === 403
+      shouldHardRedirectToLogin(axiosErr.response?.status) &&
+      axiosErr.code === "ERR_BAD_REQUEST"
     ) {
       window.location.href = "/login";
     }

@@ -13,6 +13,8 @@ export type AggregatorLoginResult = {
   brand?: string;
   client_type: string;
   expiresAt?: number;
+  /** viaVIP JWT for analytics/CX (ADMIN/OPS only). */
+  viaVipToken?: string;
 };
 
 export async function aggregatorLogin(
