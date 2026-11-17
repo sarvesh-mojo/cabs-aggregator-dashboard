@@ -3,6 +3,7 @@ import { store } from "../Redux/store";
 import type { RootState } from "../Redux/store";
 import { getMojoEventApiBaseUrl, getYatraProdInvoiceAuth, YATRA_PROD_INVOICE_API_HOST } from "../utils/partnerAccess";
 import { omitClientIdForPartner } from "../utils/partnerDisplayLabels";
+import { resolveViaDomain } from "./runtimeHosts";
 
 /** Used only when login did not return a Yatra host and the session is not prod or preprod. */
 const YATRA_DEV_API_HOST = "https://yata-devapi.bookairportcab.com";
@@ -53,12 +54,12 @@ const getApiInstance = (partner: string, multipart = false): AxiosInstance => {
   const state = store.getState() as RootState;
   const { login_JWT, partner_wise_data } = state.authStore;
 
-  let apiDomain = import.meta.env.VITE_domain as string;
+  let apiDomain = resolveViaDomain();
   let token = "";
 
   if (partner === "mojoboxx") {
     token = "";
-    apiDomain = import.meta.env.VITE_domain as string;
+    apiDomain = resolveViaDomain();
   }
   else if (partner == "mojo") {
     token = "";
@@ -90,9 +91,10 @@ const getApiInstance = (partner: string, multipart = false): AxiosInstance => {
 
     if (isPartner) {
       token = partnerData.auth;
-      apiDomain = partnerData.host;
+      apiDomain = String(partnerData.host || "").replace(/\/$/, "") || resolveViaDomain();
     } else {
       token = login_JWT;
+      apiDomain = resolveViaDomain();
     }
   }
 

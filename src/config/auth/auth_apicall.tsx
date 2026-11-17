@@ -5,6 +5,7 @@ import {
   aggregatorLogin,
   rightsForClientType,
 } from "../aggregator/api";
+import { resolveViaDomain } from "../runtimeHosts";
 
 export interface LoginPayload {
   username: string;
@@ -36,7 +37,7 @@ export const LoginAPI = async (
     }
 
     const partnerKey = "aggregator";
-    const viaHost = String(import.meta.env.VITE_domain || "").replace(/\/$/, "");
+    const viaHost = resolveViaDomain();
 
     return {
       status: 200,

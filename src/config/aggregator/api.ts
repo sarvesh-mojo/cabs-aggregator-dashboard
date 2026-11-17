@@ -1,21 +1,7 @@
+import { resolveAggregatorBase } from "../runtimeHosts";
+
 /** Local Vite proxies /auth|/admin to :4100. Deployed dashboard has no proxy. */
-function resolveApiBase(): string {
-  const fromEnv = String(import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-  if (fromEnv) return fromEnv;
-
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (
-      host === "aggregator-dashboard.bookairportcab.com" ||
-      host.endsWith(".aggregator-dashboard.bookairportcab.com")
-    ) {
-      return "https://api-aggregator.bookairportcab.com";
-    }
-  }
-  return "";
-}
-
-const API_BASE = resolveApiBase();
+const API_BASE = resolveAggregatorBase();
 
 function aggregatorUrl(path: string): string {
   const clean = path.startsWith("/") ? path : `/${path}`;
