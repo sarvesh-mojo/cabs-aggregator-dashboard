@@ -5,6 +5,7 @@ import { PartnerTab } from "../../../components/common/PartnerTab";
 import { RangerPicker } from "../../../components/common/RangePicker";
 import PageMeta from "../../../components/common/PageMeta";
 import { AnalyticsLoader } from "../../../config/customerCare/helper";
+import { AvailablecabPartners } from "../../../config/customerCare/constant";
 import { GET_CUSTOM_BOOKING_STATISTICS } from "../../../config/customerCare/operationsApicall";
 import { isRequestCanceled } from "../../../config/apiMethods";
 import {
@@ -24,6 +25,28 @@ const getTodayIST = () =>
 const ROUTE_LIMIT = 20;
 const SPOT_LIMIT = 20;
 const DISTANCE_OPTIONS = [400, 500, 800, 1500];
+const PER_KM_OPTIONS = [
+  { value: 0, label: "Any ₹/km" },
+  { value: 15, label: "≤ ₹15/km" },
+  { value: 20, label: "≤ ₹20/km" },
+  { value: 25, label: "≤ ₹25/km" },
+  { value: 30, label: "≤ ₹30/km" },
+  { value: 40, label: "≤ ₹40/km" },
+];
+
+const JOURNEY_OPTIONS = [
+  { value: "OUTSTATION", label: "Outstation" },
+  { value: "AIRPORT", label: "Airport transfer" },
+  { value: "LOCAL", label: "Local" },
+  { value: "RENTAL", label: "Rental" },
+  { value: "ALL", label: "All journey types" },
+];
+
+const TRAVEL_OPTIONS = [
+  { value: "", label: "Arrival and departure" },
+  { value: "Departure", label: "Departure" },
+  { value: "Arrival", label: "Arrival" },
+];
 
 const METRO_AIRPORTS = [
   { city: "Delhi", code: "DEL" },
@@ -41,6 +64,9 @@ const METRO_AIRPORTS = [
 
 const CITY_PIN_KM = 80;
 
+const selectClass =
+  "rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800";
+
 const toNumber = (value: unknown): number | null => {
   if (value == null || value === "") return null;
   const parsed = Number(value);
@@ -57,13 +83,20 @@ const toRoute = (row: Record<string, unknown>): MetroRoute | null => {
   if (!city || !route || originLat == null || originLng == null || destLat == null || destLng == null) {
     return null;
   }
+  const avgKm = toNumber(row.avgKm) ?? 0;
+  const minFare = toNumber(row.minFare);
+  const perKmFromApi = toNumber(row.perKmRate);
+  const perKmRate =
+    perKmFromApi ??
+    (minFare != null && avgKm > 0 ? Math.round((minFare / avgKm) * 10) / 10 : null);
   return {
     city,
     route,
     searches: toNumber(row.searches) ?? 0,
     searchesPerDay: toNumber(row.searchesPerDay) ?? 0,
-    avgKm: toNumber(row.avgKm) ?? 0,
-    minFare: toNumber(row.minFare),
+    avgKm,
+    minFare,
+    perKmRate,
     originLat,
     originLng,
     destLat,
@@ -82,6 +115,11 @@ export const MetroRouteMap = () => {
     return [today, today];
   });
   const [maxKm, setMaxKm] = useState(500);
+  const [maxPerKmRate, setMaxPerKmRate] = useState(0);
+  const [journeyType, setJourneyType] = useState("OUTSTATION");
+  const [travelType, setTravelType] = useState("");
+  const [airportCode, setAirportCode] = useState("");
+  const [cabPartner, setCabPartner] = useState("");
   const [pinCity, setPinCity] = useState("Delhi");
   const [routes, setRoutes] = useState<MetroRoute[]>([]);
   const [pinReport, setPinReport] = useState<FareSearchPinReport | null>(null);
@@ -103,6 +141,11 @@ export const MetroRouteMap = () => {
             to: dateRange[1],
             limit: ROUTE_LIMIT,
             maxKm,
+            journeyType,
+            ...(travelType ? { travelType } : {}),
+            ...(airportCode ? { airportCode } : {}),
+            ...(cabPartner ? { cabPartner } : {}),
+            ...(maxPerKmRate > 0 ? { maxPerKmRate } : {}),
           },
           signal,
         );
@@ -120,10 +163,13 @@ export const MetroRouteMap = () => {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [dateRange, maxKm, partner],
+    [airportCode, cabPartner, dateRange, journeyType, maxKm, maxPerKmRate, partner, travelType],
   );
 
-  const pinAirport = METRO_AIRPORTS.find((metro) => metro.city === pinCity)?.code || "DEL";
+  const pinAirport =
+    airportCode ||
+    METRO_AIRPORTS.find((metro) => metro.city === pinCity)?.code ||
+    "DEL";
 
   const loadPins = useCallback(
     async (signal?: AbortSignal) => {
@@ -137,6 +183,9 @@ export const MetroRouteMap = () => {
             to: dateRange[1],
             pinKm: CITY_PIN_KM,
             airportCode: pinAirport,
+            ...(travelType ? { travelType } : {}),
+            ...(journeyType && journeyType !== "ALL" ? { journeyType } : {}),
+            ...(cabPartner ? { cabPartner } : {}),
           },
           signal,
         );
@@ -153,7 +202,7 @@ export const MetroRouteMap = () => {
         if (!signal?.aborted) setPinLoading(false);
       }
     },
-    [dateRange, partner, pinAirport],
+    [cabPartner, dateRange, journeyType, partner, pinAirport, travelType],
   );
 
   useEffect(() => {
@@ -170,7 +219,13 @@ export const MetroRouteMap = () => {
 
   useEffect(() => {
     setSelectedPin(null);
-  }, [pinCity, dateRange, partner]);
+  }, [pinCity, pinAirport, dateRange, partner, journeyType, travelType, cabPartner]);
+
+  useEffect(() => {
+    if (!airportCode) return;
+    const match = METRO_AIRPORTS.find((metro) => metro.code === airportCode);
+    if (match) setPinCity(match.city);
+  }, [airportCode]);
 
   const pinPoints = pinReport ? garagesToPoints(pinReport.garages) : [];
   const topPins = [...(pinReport?.garages || [])].sort((a, b) => b.searches - a.searches);
@@ -188,15 +243,59 @@ export const MetroRouteMap = () => {
       <div className="mb-2 flex shrink-0 flex-wrap items-center gap-3">
         <RangerPicker updateDate={dateRange} selectedRange={setDateRange} />
         <label className="flex items-center gap-2 text-sm text-slate-600">
-          PIN map
+          Journey type
           <select
-            value={pinCity}
-            onChange={(event) => setPinCity(event.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800"
+            value={journeyType}
+            onChange={(event) => setJourneyType(event.target.value)}
+            className={selectClass}
           >
+            {JOURNEY_OPTIONS.map((option) => (
+              <option key={option.value || "all"} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          Travel type
+          <select
+            value={travelType}
+            onChange={(event) => setTravelType(event.target.value)}
+            className={selectClass}
+          >
+            {TRAVEL_OPTIONS.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          City / airport
+          <select
+            value={airportCode}
+            onChange={(event) => setAirportCode(event.target.value)}
+            className={selectClass}
+          >
+            <option value="">All metros</option>
             {METRO_AIRPORTS.map((metro) => (
-              <option key={metro.code} value={metro.city}>
-                {metro.city}
+              <option key={metro.code} value={metro.code}>
+                {metro.city} ({metro.code})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          Cab partner
+          <select
+            value={cabPartner}
+            onChange={(event) => setCabPartner(event.target.value)}
+            className={selectClass}
+          >
+            <option value="">All partners</option>
+            {AvailablecabPartners.map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>
@@ -206,11 +305,43 @@ export const MetroRouteMap = () => {
           <select
             value={maxKm}
             onChange={(event) => setMaxKm(Number(event.target.value))}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800"
+            className={selectClass}
           >
             {DISTANCE_OPTIONS.map((km) => (
               <option key={km} value={km}>
                 {km} km
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          Max ₹/km
+          <select
+            value={maxPerKmRate}
+            onChange={(event) => setMaxPerKmRate(Number(event.target.value))}
+            className={selectClass}
+          >
+            {PER_KM_OPTIONS.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          PIN map
+          <select
+            value={pinCity}
+            onChange={(event) => {
+              setPinCity(event.target.value);
+              const match = METRO_AIRPORTS.find((metro) => metro.city === event.target.value);
+              if (match) setAirportCode(match.code);
+            }}
+            className={selectClass}
+          >
+            {METRO_AIRPORTS.map((metro) => (
+              <option key={metro.code} value={metro.city}>
+                {metro.city}
               </option>
             ))}
           </select>
@@ -221,7 +352,8 @@ export const MetroRouteMap = () => {
         <AnalyticsLoader height="h-full" />
       ) : routes.length === 0 ? (
         <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-sm text-slate-500">
-          No outstation routes in this date range under {maxKm} km.
+          No routes in this date range under {maxKm} km
+          {maxPerKmRate > 0 ? ` and ≤ ₹${maxPerKmRate}/km` : ""}.
         </div>
       ) : (
         <IndiaRouteMap
@@ -232,7 +364,11 @@ export const MetroRouteMap = () => {
           maxKm={maxKm}
           limit={ROUTE_LIMIT}
           onCityChange={(city) => {
-            if (city) setPinCity(city);
+            if (city) {
+              setPinCity(city);
+              const match = METRO_AIRPORTS.find((metro) => metro.city === city);
+              if (match) setAirportCode(match.code);
+            }
           }}
         />
       )}
@@ -264,6 +400,10 @@ export const MetroRouteMap = () => {
               <ul className="mt-3 min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
                 {topPins.slice(0, SPOT_LIMIT).map((garage) => {
                   const active = selectedPin === garage.pin;
+                  const perKm =
+                    garage.avgFare != null && garage.avgKm
+                      ? Math.round((garage.avgFare / garage.avgKm) * 10) / 10
+                      : null;
                   return (
                     <li key={garage.pin}>
                       <button
@@ -285,6 +425,7 @@ export const MetroRouteMap = () => {
                           {garage.avgFare == null
                             ? ""
                             : ` · ₹${Math.round(garage.avgFare).toLocaleString("en-IN")}`}
+                          {perKm == null ? "" : ` · ₹${perKm.toFixed(1)}/km`}
                         </div>
                       </button>
                     </li>

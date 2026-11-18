@@ -18,6 +18,8 @@ export type MetroRoute = {
   searchesPerDay: number;
   avgKm: number;
   minFare: number | null;
+  /** minFare ÷ avgKm; null when either side is missing */
+  perKmRate: number | null;
   originLat: number;
   originLng: number;
   destLat: number;
@@ -83,7 +85,16 @@ const formatFare = (fare: number | null) =>
 const formatMinFare = (fare: number | null) =>
   fare == null ? "—" : `from ${formatFare(fare)}`;
 
+const formatPerKm = (rate: number | null) =>
+  rate == null ? "—" : `₹${rate.toFixed(1)}/km`;
+
 const formatPerDay = (value: number) => (value > 0 ? value.toFixed(1) : "<0.1");
+
+const perKmOf = (row: MetroRoute): number | null => {
+  if (row.perKmRate != null && Number.isFinite(row.perKmRate)) return row.perKmRate;
+  if (row.minFare == null || !row.avgKm) return null;
+  return Math.round((row.minFare / row.avgKm) * 10) / 10;
+};
 
 const zoomToFit = (width: number, height: number) => {
   const pad = 28;
@@ -527,7 +538,8 @@ export const IndiaRouteMap = ({
                 {inr.format(hovered.row.searches)} searches · {formatPerDay(hovered.row.searchesPerDay)}/day
               </div>
               <div className="text-xs text-white/80">
-                {inr.format(hovered.row.avgKm)} km · {formatMinFare(hovered.row.minFare)}
+                {inr.format(hovered.row.avgKm)} km · {formatMinFare(hovered.row.minFare)} ·{" "}
+                {formatPerKm(perKmOf(hovered.row))}
               </div>
             </div>
           )}
@@ -604,7 +616,7 @@ export const IndiaRouteMap = ({
                       </div>
                       <div className="mt-0.5 pl-6 text-xs text-slate-500">
                         {inr.format(row.searches)} searches · {formatPerDay(row.searchesPerDay)}/day ·{" "}
-                        {inr.format(row.avgKm)} km
+                        {inr.format(row.avgKm)} km · {formatPerKm(perKmOf(row))}
                       </div>
                     </button>
                   </li>
