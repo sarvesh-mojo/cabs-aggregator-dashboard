@@ -68,7 +68,7 @@ export default function AggregatorBookings() {
             Booking links
           </h2>
           <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-            Brand booking ↔ VIA booking, net / markup / amount reported.
+            Live booking rows from the database. Brand booking ↔ VIA booking, net / markup / amount reported.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

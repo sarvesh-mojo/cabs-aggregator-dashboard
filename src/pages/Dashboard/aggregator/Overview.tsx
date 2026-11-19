@@ -79,7 +79,7 @@ export default function AggregatorOverview() {
             Aggregator overview
           </h2>
           <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-            Net vs marked-up vs brand-reported amounts (cabs-aggregator).
+            Live totals from the booking table. Net vs marked-up vs brand-reported amounts.
           </p>
         </div>
         <label className="text-theme-sm text-gray-500 dark:text-gray-400">
