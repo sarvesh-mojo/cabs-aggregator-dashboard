@@ -226,6 +226,7 @@ const CAB_TEST_PARTNERS: CabTestPartner[] = [
   { name: "MILODRIVE", airports: ["DEL", "BLR"] },
   { name: "HYBRIDFM", airports: ["DEL"] },
   { name: "GRELCABS", airports: ["PNQ"] },
+  { name: "VIAVIP", airports: ["DEL"], anyCity: true },
 ];
 
 function defaultPayload() {
