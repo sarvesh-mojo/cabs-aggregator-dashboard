@@ -869,9 +869,10 @@ export const OPS_FARE_SEARCH = async (
   selectedPartner: string,
   payload: Record<string, any>
 ) => {
+  // Ops always opts into discount meta so Payment mode / cards can use finalFare.
   const response = await PostAPI<any>(
     resolvePartner(selectedPartner),
-    `${FARE_SEARCH}?context=mojoboxx`,
+    `${FARE_SEARCH}?context=mojoboxx&showDiscount=1`,
     payload
   );
   return response.data;

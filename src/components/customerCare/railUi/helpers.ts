@@ -38,7 +38,10 @@ export function formatInr(value: unknown) {
   }).format(amount);
 }
 
+/** Prefer discounted `finalFare` when hourly discount applied; else listed fare. */
 export function fareAmount(fare: any) {
+  const finalFare = Number(fare?.finalFare);
+  if (Number.isFinite(finalFare) && finalFare > 0) return finalFare;
   return Number(fare?.fare != null ? fare.fare : fare?.amount) || 0;
 }
 
@@ -49,12 +52,17 @@ export function partnerConfirmsQuotedAmount(partner: string) {
 }
 
 /**
- * paymentConfirmation amount. Full uses fare-search `fare`; partial uses `partial`.
+ * paymentConfirmation amount. Full uses discounted `finalFare` when present,
+ * otherwise fare-search `fare`; partial uses `partial`.
  * Returned as a string, e.g. "641.15" or "199".
  */
 export function quotedPaymentAmount(fare: any, mode: "full" | "partial") {
-  const raw = mode === "partial" ? fare?.partial : fare?.fare;
-  const amount = Number(raw);
+  if (mode === "partial") {
+    const amount = Number(fare?.partial);
+    if (!Number.isFinite(amount) || amount <= 0) return "";
+    return String(amount);
+  }
+  const amount = fareAmount(fare);
   if (!Number.isFinite(amount) || amount <= 0) return "";
   return String(amount);
 }
