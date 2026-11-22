@@ -575,7 +575,10 @@ const HandleBooking: React.FC = () => {
   }, [booking?.email, linkedComplaintEmails]);
 
   const handleEscalateIssue = () => {
-    if (!booking?.bookingId) return;
+    if (!booking?.bookingId) {
+      message.error("Load a booking before escalating.");
+      return;
+    }
     Modal.confirm({
       title: "Escalate this booking as urgent?",
       content:
@@ -587,7 +590,10 @@ const HandleBooking: React.FC = () => {
         try {
           await escalateBookingIssue({
             bookingId: String(booking.bookingId),
-            agent: sessionStorage["userName"] || "CX agent",
+            agent:
+              sessionStorage["userName"] ||
+              store.getState().authStore?.login_username ||
+              "CX agent",
             linkedEmails: linkedComplaintEmails,
             booking: {
               parentBookingId: booking.parentBookingId,
@@ -603,8 +609,9 @@ const HandleBooking: React.FC = () => {
           });
           message.success("Escalation email sent to ops");
         } catch (error) {
-          message.error(emailComplaintError(error));
-          throw error;
+          const text = emailComplaintError(error);
+          message.error(text || "Escalation failed");
+          return Promise.reject(error);
         } finally {
           setEscalating(false);
         }

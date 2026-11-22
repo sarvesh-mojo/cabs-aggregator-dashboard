@@ -44,7 +44,13 @@ type Envelope<T> = {
 /** Matches the analytics mailbox sync interval. */
 export const EMAIL_COMPLAINT_REFRESH_MS = 60_000;
 
-const INDIGO_API = "https://ing-api-prod.bookairportcab.com";
+const INDIGO_API =
+  (typeof import.meta !== "undefined" &&
+    String((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_ANALYTICS_API || "").replace(
+      /\/$/,
+      "",
+    )) ||
+  "https://ing-api-prod.bookairportcab.com";
 const LIST = "/api/v1/operations/emailComplaints";
 const RELATED = "/api/v1/operations/emailComplaint/related";
 const TRAIL = "/api/v1/operations/emailComplaint/trail";
@@ -56,21 +62,53 @@ const MATCH = "/api/v1/operations/emailComplaint/match";
 const BOOKING_ESCALATE = "/api/v1/operations/emailComplaint/bookingEscalate";
 const BOOKING_NOTIFY = "/api/v1/operations/emailComplaint/bookingNotify";
 
+function isJwt(value: unknown): value is string {
+  return typeof value === "string" && value.split(".").length === 3;
+}
+
+/** Email-complaint routes live on indigo-analytics (ing-api), not viaVIP booking API. */
+function isAnalyticsApiHost(host: string) {
+  const value = String(host || "").toLowerCase();
+  return (
+    value.includes("ing-api") ||
+    value.includes("analytics") ||
+    value.includes("indigo-analytics")
+  );
+}
+
 function analyticsSession() {
-  const read = store.getState().authStore.partner_wise_data?.[0]?.read;
-  const host =
-    typeof read?.host === "string" && read.host.startsWith("http")
-      ? read.host.replace(/\/$/, "")
-      : INDIGO_API;
-  const token =
-    typeof read?.auth === "string" && read.auth.split(".").length === 3 ? read.auth : "";
+  const pwd = store.getState().authStore.partner_wise_data?.[0] || {};
+  const preferred = ["read", "indigo", "aggregator", "mojo", "bac", "yatra"];
+  const keys = [...preferred, ...Object.keys(pwd).filter((key) => !preferred.includes(key))];
+
+  let token = "";
+  let host = INDIGO_API;
+
+  for (const key of keys) {
+    const entry = pwd[key];
+    if (!entry || typeof entry !== "object") continue;
+    const auth = (entry as { auth?: unknown }).auth;
+    if (!isJwt(auth)) continue;
+    token = auth;
+    const entryHost = String((entry as { host?: unknown }).host || "").replace(/\/$/, "");
+    // Prefer an explicit analytics/read host; never send email-complaint calls to viaVIP.
+    if (key === "read" && entryHost.startsWith("http")) {
+      host = entryHost;
+    } else if (entryHost.startsWith("http") && isAnalyticsApiHost(entryHost)) {
+      host = entryHost;
+    }
+    break;
+  }
+
   return { host, token };
 }
 
 function client(timeout: number) {
   const { host, token } = analyticsSession();
   if (!token) {
-    throw new Error("Analytics session is missing. Sign in again, then open Email Complaint.");
+    throw new Error(
+      "Analytics session is missing. Sign in again (ADMIN/OPS with viaVIP token), then retry Escalate.",
+    );
   }
   return axios.create({
     baseURL: host,
@@ -100,6 +138,20 @@ export function emailComplaintError(error: unknown) {
   }>;
   if (axiosError.response?.status === 504) {
     return "The analytics API timed out while reading the mailbox. Refresh to try again.";
+  }
+  if (axiosError.response?.status === 404 || axiosError.response?.status === 403) {
+    const msg =
+      (typeof axiosError.response?.data?.error === "string"
+        ? axiosError.response.data.error
+        : axiosError.response?.data?.error?.message) ||
+      axiosError.response?.data?.message ||
+      "";
+    if (/invalid token|access denied|not found|cannot post|forbidden/i.test(msg || "")) {
+      return (
+        msg ||
+        "Escalate API rejected the request. Deploy indigo-analytics-bk-api (bookingEscalate) and confirm your login token is accepted by ing-api-prod."
+      );
+    }
   }
   const nested = axiosError.response?.data?.error;
   return (
