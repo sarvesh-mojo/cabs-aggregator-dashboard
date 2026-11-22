@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Modal, message } from "antd";
 import { MdContentCopy } from "react-icons/md";
 import {
   cancelBookingApi,
@@ -27,13 +28,16 @@ import {
 } from "../../../config/customerCare/operationsApicall";
 import {
   emailComplaintError,
+  escalateBookingIssue,
   listRelatedEmailComplaints,
+  notifyBookingCustomers,
   type EmailComplaintThread,
 } from "../../../config/customerCare/emailComplaintApi";
 import { store } from "../../../Redux/store";
 import { useSearchParams, useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import {
+  bookingDetailPartner,
   isCloudWatchLogsPartner,
   resolveInvoiceApiPartner,
 } from "../../../utils/partnerAccess";
@@ -134,6 +138,31 @@ const npsSendStatusClass = (status?: string): string => {
   }
 };
 
+type SearchKind = "bookingId" | "mobile" | "email";
+
+const classifySearchQuery = (value: string): SearchKind => {
+  const trimmed = String(value || "").trim();
+  if (trimmed.includes("@")) return "email";
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length >= 10 && digits.length <= 12 && !/[A-Za-z]/.test(trimmed)) {
+    return "mobile";
+  }
+  return "bookingId";
+};
+
+const lookingIntoDraft = (bookingId?: string | null) =>
+  [
+    "Hello,",
+    "",
+    bookingId
+      ? `We are looking into this matter for booking ${bookingId} and will call you shortly.`
+      : "We are looking into this matter and will call you shortly.",
+    "",
+    "Thank you,",
+    "Book Airport Cab Support",
+    "care@bookairportcab.com",
+  ].join("\n");
+
 const HandleBooking: React.FC = () => {
   const [searchParams] = useSearchParams();
   const bookingIdParam = searchParams.get("bookingId");
@@ -167,6 +196,9 @@ const HandleBooking: React.FC = () => {
   const [relatedEmailsLoading, setRelatedEmailsLoading] = useState(false);
   const [relatedEmailsError, setRelatedEmailsError] = useState("");
   const [expandedEmailId, setExpandedEmailId] = useState<number | null>(null);
+  const [searchHits, setSearchHits] = useState<Booking[]>([]);
+  const [escalating, setEscalating] = useState(false);
+  const [notifying, setNotifying] = useState(false);
 
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -177,63 +209,84 @@ const HandleBooking: React.FC = () => {
   const [showtrackingUrl, setShowtrackingUrl] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
+  const applyFetchedBooking = (fetchedBooking: Booking, partnerName: string) => {
+    setBooking(fetchedBooking);
+    setSearchHits([]);
+    setDirectLogsBookingId("");
+    fetchNpsData(fetchedBooking.bookingId, partnerName);
+    fetchNpsMessageSends(fetchedBooking.bookingId, partnerName);
+    fetchCustomerRideHistory(
+      fetchedBooking.mobile,
+      partnerName,
+      fetchedBooking.bookingId,
+    );
+    fetchOpsRemarks(fetchedBooking.bookingId, partnerName);
+    fetchStatusEvents(fetchedBooking.bookingId, partnerName);
+    fetchRelatedEmails(fetchedBooking);
+    if (fetchedBooking.paymentDetails) {
+      setPaymentStatusData(fetchedBooking.paymentDetails);
+      setShowPaymentStatusBlock(true);
+    } else {
+      setPaymentStatusData(null);
+      setShowPaymentStatusBlock(false);
+    }
+  };
+
+  const clearBookingState = (fallbackId = "") => {
+    setBooking(null);
+    setDirectLogsBookingId(fallbackId);
+    setPaymentStatusData(null);
+    setShowPaymentStatusBlock(false);
+    setStatusEvents([]);
+    setCustomerRideHistory([]);
+    setNpsMessageSends([]);
+    setRelatedEmails([]);
+    setRelatedEmailsTotal(0);
+    setRelatedEmailsError("");
+    setExpandedEmailId(null);
+  };
+
   const fetchBooking = async (bId: string, partnerName: string) => {
     setLoading(true);
+    setSearchHits([]);
     try {
+      const kind = classifySearchQuery(bId);
       const payload: any = {
-        bookingId: bId,
+        bookingId: bId.trim(),
         pageName: "detail",
         partnerResponse: true,
+        limit: kind === "bookingId" ? 5 : 20,
+        orderDirection: "DESC",
       };
       const response: any = await GETBOOKING_LOGS(partnerName, payload);
-      let fetchedBooking = null;
-      if (response?.bookings && response.bookings.length > 0) {
-        fetchedBooking = response.bookings[0];
+      const list: Booking[] = Array.isArray(response?.bookings) ? response.bookings : [];
+      if (!list.length) {
+        clearBookingState(bId);
+        return;
       }
-      setBooking(fetchedBooking);
-      setDirectLogsBookingId(fetchedBooking ? "" : bId);
-      if (fetchedBooking) {
-        fetchNpsData(fetchedBooking.bookingId, partnerName);
-        fetchNpsMessageSends(fetchedBooking.bookingId, partnerName);
-        fetchCustomerRideHistory(
-          fetchedBooking.mobile,
-          partnerName,
-          fetchedBooking.bookingId,
+      const exact = list.find(
+        (item) =>
+          String(item.bookingId || "").toUpperCase() === bId.trim().toUpperCase() ||
+          String(item.parentBookingId || "").toUpperCase() === bId.trim().toUpperCase(),
+      );
+      if (kind !== "bookingId" && list.length > 1 && !exact) {
+        setSearchHits(list);
+        clearBookingState();
+        return;
+      }
+      applyFetchedBooking(exact || list[0], partnerName);
+      if ((exact || list[0])?.bookingId) {
+        const selectedId = String((exact || list[0]).bookingId);
+        setSearchInput(selectedId);
+        navigate(
+          `/dashboard/customerCare/HandleBooking?bookingId=${partnerName}-${selectedId}`,
+          { replace: true },
         );
-        fetchOpsRemarks(fetchedBooking.bookingId, partnerName);
-        fetchStatusEvents(fetchedBooking.bookingId, partnerName);
-        fetchRelatedEmails(fetchedBooking);
-        if (fetchedBooking.paymentDetails) {
-          setPaymentStatusData(fetchedBooking.paymentDetails);
-          setShowPaymentStatusBlock(true);
-        } else {
-          setPaymentStatusData(null);
-          setShowPaymentStatusBlock(false);
-        }
-      } else {
-        setPaymentStatusData(null);
-        setShowPaymentStatusBlock(false);
-        setStatusEvents([]);
-        setCustomerRideHistory([]);
-        setNpsMessageSends([]);
-        setRelatedEmails([]);
-        setRelatedEmailsTotal(0);
-        setRelatedEmailsError("");
-        setExpandedEmailId(null);
       }
     } catch (e) {
       console.error(e);
-      setBooking(null);
-      setDirectLogsBookingId(bId);
-      setPaymentStatusData(null);
-      setShowPaymentStatusBlock(false);
-      setStatusEvents([]);
-      setCustomerRideHistory([]);
-      setNpsMessageSends([]);
-      setRelatedEmails([]);
-      setRelatedEmailsTotal(0);
-      setRelatedEmailsError("");
-      setExpandedEmailId(null);
+      setSearchHits([]);
+      clearBookingState(bId);
     } finally {
       setLoading(false);
     }
@@ -477,7 +530,12 @@ const HandleBooking: React.FC = () => {
       if (parts.length > 1) {
         const id = parts.slice(1).join("-");
         const resolved = resolveRemarkApiPartner({ bookingId: id }, parts[0]);
-        const p = resolved !== "not found" ? resolved : parts[0];
+        const fromUrl = resolved !== "not found" ? resolved : parts[0];
+        const p = bookingDetailPartner(
+          fromUrl,
+          AuthstoreData?.login_username,
+          AuthstoreData?.login_partners,
+        );
         setSearchPartner(p);
         setSearchInput(id);
         fetchBooking(id, p);
@@ -489,11 +547,111 @@ const HandleBooking: React.FC = () => {
   }, [bookingIdParam]);
 
   const handleSearchClick = () => {
-    if (searchInput && searchPartner) {
-      fetchBooking(searchInput, searchPartner);
+    if (searchInput.trim() && searchPartner) {
+      fetchBooking(searchInput.trim(), searchPartner);
     } else {
-      alert("Please enter both Booking ID and select a Partner");
+      message.error("Enter booking ID / mobile / email and select a partner");
     }
+  };
+
+  const linkedComplaintEmails = useMemo(() => {
+    const bookingEmail = String(booking?.email || "").trim().toLowerCase();
+    const emails = new Set<string>();
+    relatedEmails.forEach((thread) => {
+      const sender = String(thread.customerEmail || "").trim().toLowerCase();
+      if (sender && sender.includes("@") && sender !== bookingEmail) {
+        emails.add(sender);
+      }
+    });
+    return [...emails];
+  }, [booking?.email, relatedEmails]);
+
+  const notifyRecipientEmails = useMemo(() => {
+    const emails = new Set<string>();
+    const bookingEmail = String(booking?.email || "").trim().toLowerCase();
+    if (bookingEmail.includes("@")) emails.add(bookingEmail);
+    linkedComplaintEmails.forEach((email) => emails.add(email));
+    return [...emails];
+  }, [booking?.email, linkedComplaintEmails]);
+
+  const handleEscalateIssue = () => {
+    if (!booking?.bookingId) return;
+    Modal.confirm({
+      title: "Escalate this booking as urgent?",
+      content:
+        "An email will be sent to the configured ops inbox asking them to look into this matter urgently.",
+      okText: "Send escalation",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        setEscalating(true);
+        try {
+          await escalateBookingIssue({
+            bookingId: String(booking.bookingId),
+            agent: sessionStorage["userName"] || "CX agent",
+            linkedEmails: linkedComplaintEmails,
+            booking: {
+              parentBookingId: booking.parentBookingId,
+              status: booking.status,
+              userName: booking.userName,
+              mobile: booking.mobile,
+              email: booking.email,
+              cabPartner: booking.cabPartner,
+              sourceName: booking.sourceName,
+              destinationName: booking.destinationName,
+              pickupTime: booking.pickupTime,
+            },
+          });
+          message.success("Escalation email sent to ops");
+        } catch (error) {
+          message.error(emailComplaintError(error));
+          throw error;
+        } finally {
+          setEscalating(false);
+        }
+      },
+    });
+  };
+
+  const handleNotifyCustomers = () => {
+    if (!booking?.bookingId || notifyRecipientEmails.length === 0) {
+      message.error("No customer emails available for this booking");
+      return;
+    }
+    const both =
+      notifyRecipientEmails.length > 1
+        ? `Both ${notifyRecipientEmails.join(" and ")}`
+        : notifyRecipientEmails[0];
+    Modal.confirm({
+      title: "Email customer that we are looking into this?",
+      content: `${both} will receive: we are looking into this matter and will call shortly.`,
+      okText: "Send email",
+      onOk: async () => {
+        setNotifying(true);
+        try {
+          const linkedThread = relatedEmails.find((thread) =>
+            notifyRecipientEmails.includes(
+              String(thread.customerEmail || "").trim().toLowerCase(),
+            ),
+          );
+          await notifyBookingCustomers({
+            bookingId: String(booking.bookingId),
+            emails: notifyRecipientEmails,
+            draftReply: lookingIntoDraft(booking.bookingId),
+            threadId: linkedThread?.id,
+          });
+          message.success(
+            notifyRecipientEmails.length > 1
+              ? "Update emailed to booking email and complaint sender"
+              : "Update emailed to customer",
+          );
+        } catch (error) {
+          message.error(emailComplaintError(error));
+          throw error;
+        } finally {
+          setNotifying(false);
+        }
+      },
+    });
   };
 
   const { selectedPartner } = store.getState().operationStore;
@@ -642,26 +800,31 @@ const HandleBooking: React.FC = () => {
   };
 
   const SearchBlock = (
-    <div className="bg-white p-4 mb-4 rounded-xl shadow-md border border-gray-200">
-      <div className="flex flex-wrap gap-4 items-end max-w-7xl mx-auto">
-        <div className="flex flex-col flex-1 min-w-[200px]">
+    <div className="bg-white p-3 sm:p-4 mb-3 sm:mb-4 rounded-xl shadow-md border border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-stretch sm:items-end max-w-7xl mx-auto">
+        <div className="flex flex-col flex-1 min-w-0 sm:min-w-[220px]">
           <label className="text-sm font-semibold text-gray-700 mb-1">
-            Enter Booking ID
+            Booking ID / Mobile / Email
           </label>
           <input
             type="text"
-            className="p-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full p-2.5 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-base sm:text-sm"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Booking ID..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearchClick();
+            }}
+            placeholder="JCRWE… / 98xxxxxxxx / name@email.com"
+            inputMode="search"
+            autoCapitalize="characters"
           />
         </div>
-        <div className="flex flex-col flex-1 min-w-[200px]">
+        <div className="flex flex-col flex-1 min-w-0 sm:min-w-[180px]">
           <label className="text-sm font-semibold text-gray-700 mb-1">
             Select Partner
           </label>
           <select
-            className="p-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-700"
+            className="w-full p-2.5 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-700 text-base sm:text-sm"
             value={searchPartner}
             onChange={(e) => setSearchPartner(e.target.value)}
           >
@@ -676,23 +839,65 @@ const HandleBooking: React.FC = () => {
         <button
           onClick={handleSearchClick}
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition disabled:opacity-75 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition disabled:opacity-75 disabled:cursor-not-allowed"
         >
           {loading ? "Searching..." : "Search"}
         </button>
       </div>
+      {searchHits.length > 0 ? (
+        <div className="mt-3 max-w-7xl mx-auto space-y-2">
+          <p className="text-sm font-medium text-slate-700">
+            {searchHits.length} bookings found — pick one
+          </p>
+          <div className="max-h-72 overflow-y-auto space-y-2">
+            {searchHits.map((hit) => (
+              <button
+                key={hit.bookingId}
+                type="button"
+                className="w-full text-left rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 hover:border-blue-400 hover:bg-blue-50"
+                onClick={() => {
+                  if (!searchPartner) return;
+                  applyFetchedBooking(hit, searchPartner);
+                  setSearchInput(String(hit.bookingId || ""));
+                  navigate(
+                    `/dashboard/customerCare/HandleBooking?bookingId=${searchPartner}-${hit.bookingId}`,
+                    { replace: true },
+                  );
+                }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-800 break-all">
+                    {hit.bookingId}
+                  </span>
+                  <span className="text-[11px] rounded-full bg-white border px-2 py-0.5">
+                    {String(hit.status || "—").replace(/_/g, " ")}
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-gray-600 break-words">
+                  {hit.mobile || "—"} · {hit.email || "—"} · {hit.cabPartner || "—"}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 
   if (!booking || Object.keys(booking).length === 0) {
     return (
-      <div className="p-3 mx-auto max-w-7xl">
+      <div className="p-2 sm:p-3 mx-auto max-w-7xl w-full min-w-0 overflow-x-hidden">
         {SearchBlock}
-        <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200 text-center">
-          <p className="text-red-500 font-medium">No booking data found.</p>
-        </div>
+        {searchHits.length === 0 ? (
+          <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg border border-gray-200 text-center">
+            <p className="text-red-500 font-medium">No booking data found.</p>
+            <p className="text-xs text-gray-500 mt-2">
+              Search with booking ID, mobile number, or email.
+            </p>
+          </div>
+        ) : null}
         {showCloudWatchLogs && directLogsBookingId && (
-          <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200 mt-4 text-left">
+          <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg border border-gray-200 mt-4 text-left overflow-x-auto">
             <CloudwatchLogs
               bookingId={directLogsBookingId}
               partner={searchPartner || partner}
@@ -710,74 +915,103 @@ const HandleBooking: React.FC = () => {
   const partnerVehicleName = getPartnerVehicleName(booking?.partnerResponse);
 
   return (
-    <div className="p-3 mx-auto max-w-7xl text-[13px] leading-tight">
+    <div className="p-2 sm:p-3 mx-auto max-w-7xl w-full min-w-0 overflow-x-hidden text-[13px] leading-tight">
       {SearchBlock}
 
-      <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200 mt-4">
+      <div className="bg-white p-3 sm:p-5 rounded-xl shadow-lg border border-gray-200 mt-3 sm:mt-4">
         {/* HEADER */}
-        <div className="text-center pb-3 border-b border-gray-300">
-          <h2 className="text-xl font-semibold mb-1">Booking Overview</h2>
-          <div className="text-gray-700 my-1 flex items-center justify-center gap-2">
-            <b>Parent ID:</b> {booking?.parentBookingId}
-            {booking?.parentBookingId && (
-              <div className="relative inline-flex items-center">
-                <MdContentCopy
-                  className="cursor-pointer text-blue-500 hover:text-blue-600"
-                  onClick={() => handleCopy(booking?.parentBookingId || "", "parent")}
-                  title="Copy Parent ID"
-                />
-                {copiedId === "parent" && (
-                  <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow-md whitespace-nowrap z-10 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-gray-800">
-                    Copied!
-                  </span>
-                )}
+        <div className="pb-3 border-b border-gray-300">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0 text-left sm:text-center sm:flex-1">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Booking Overview</h2>
+              <div className="space-y-1.5 text-gray-700">
+                <div className="flex flex-wrap items-center gap-2 break-all">
+                  <b className="shrink-0">Parent ID:</b>
+                  <span>{booking?.parentBookingId || "—"}</span>
+                  {booking?.parentBookingId ? (
+                    <MdContentCopy
+                      className="cursor-pointer text-blue-500 hover:text-blue-600 shrink-0"
+                      onClick={() => handleCopy(booking?.parentBookingId || "", "parent")}
+                      title="Copy Parent ID"
+                    />
+                  ) : null}
+                  {copiedId === "parent" ? (
+                    <span className="text-[11px] text-emerald-600 font-semibold">Copied!</span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 break-all">
+                  <b className="shrink-0">Booking ID:</b>
+                  <span className="font-semibold text-slate-900">{booking?.bookingId}</span>
+                  {booking?.bookingId ? (
+                    <MdContentCopy
+                      className="cursor-pointer text-blue-500 hover:text-blue-600 shrink-0"
+                      onClick={() => handleCopy(booking?.bookingId || "", "booking")}
+                      title="Copy Booking ID"
+                    />
+                  ) : null}
+                  {copiedId === "booking" ? (
+                    <span className="text-[11px] text-emerald-600 font-semibold">Copied!</span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 break-all">
+                  <b className="shrink-0">Cab Partner Booking ID:</b>
+                  <span>{"MJB" + booking?.bookingId}</span>
+                  {booking?.bookingId ? (
+                    <MdContentCopy
+                      className="cursor-pointer text-blue-500 hover:text-blue-600 shrink-0"
+                      onClick={() => handleCopy("MJB" + (booking?.bookingId || ""), "partner")}
+                      title="Copy Cab Partner Booking ID"
+                    />
+                  ) : null}
+                  {copiedId === "partner" ? (
+                    <span className="text-[11px] text-emerald-600 font-semibold">Copied!</span>
+                  ) : null}
+                </div>
               </div>
-            )}
-            <span className="mx-2">|</span>
-            <b>Booking ID:</b> {booking?.bookingId}
-            {booking?.bookingId && (
-              <div className="relative inline-flex items-center">
-                <MdContentCopy
-                  className="cursor-pointer text-blue-500 hover:text-blue-600"
-                  onClick={() => handleCopy(booking?.bookingId || "", "booking")}
-                  title="Copy Booking ID"
-                />
-                {copiedId === "booking" && (
-                  <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow-md whitespace-nowrap z-10 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-gray-800">
-                    Copied!
-                  </span>
-                )}
-              </div>
-            )}
+              <p className="mt-3 text-base sm:text-lg">
+                Status:{" "}
+                <span className="px-2 py-1 rounded bg-green-100 text-green-700 font-semibold">
+                  {booking?.status?.replace(/_/g, " ")}
+                </span>
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-[220px]">
+              <button
+                type="button"
+                disabled={escalating}
+                onClick={handleEscalateIssue}
+                className="w-full px-4 py-2.5 rounded-lg bg-rose-600 text-white font-medium shadow hover:bg-rose-700 disabled:opacity-60"
+              >
+                {escalating ? "Escalating…" : "Escalate issue (email ops)"}
+              </button>
+              <button
+                type="button"
+                disabled={notifying || notifyRecipientEmails.length === 0}
+                onClick={handleNotifyCustomers}
+                className="w-full px-4 py-2.5 rounded-lg bg-[#2f6cf6] text-white font-medium shadow hover:bg-[#2558d6] disabled:opacity-60"
+                title={
+                  notifyRecipientEmails.length
+                    ? `Send to: ${notifyRecipientEmails.join(", ")}`
+                    : "No customer email on booking or linked complaint"
+                }
+              >
+                {notifying
+                  ? "Sending…"
+                  : linkedComplaintEmails.length > 0
+                    ? "Email both (looking into it)"
+                    : "Email customer (looking into it)"}
+              </button>
+              {linkedComplaintEmails.length > 0 ? (
+                <p className="text-[11px] leading-4 text-gray-500">
+                  Complaint sender differs from booking email — both will be notified.
+                </p>
+              ) : null}
+            </div>
           </div>
-          <div className="flex items-center justify-center gap-2">
-            <b>Cab Partner Booking ID:</b>
-            {" MJB" + booking?.bookingId}
-            {booking?.bookingId && (
-              <div className="relative inline-flex items-center">
-                <MdContentCopy
-                  className="cursor-pointer text-blue-500 hover:text-blue-600"
-                  onClick={() => handleCopy("MJB" + (booking?.bookingId || ""), "partner")}
-                  title="Copy Cab Partner Booking ID"
-                />
-                {copiedId === "partner" && (
-                  <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow-md whitespace-nowrap z-10 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-gray-800">
-                    Copied!
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          <p className="mt-2 text-lg">
-            Status:{" "}
-            <span className="px-2 py-1 rounded bg-green-100 text-green-700 font-semibold">
-              {booking?.status?.replace(/_/g, " ")}
-            </span>
-          </p>
         </div>
 
         {/* SECTION TABS — Booking details, related emails, CloudWatch (partner-gated) */}
-        <div className="mt-4 flex flex-wrap gap-2 border-b pb-2">
+        <div className="mt-4 flex flex-nowrap sm:flex-wrap gap-2 border-b pb-2 overflow-x-auto">
           {(
             [
               { key: "details" as const, label: "Booking Details" },
@@ -796,7 +1030,7 @@ const HandleBooking: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveSection(tab.key)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`shrink-0 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 activeSection === tab.key
                   ? "bg-[#001b94] text-white shadow-md"
                   : "bg-gray-100 text-gray-700"
@@ -815,31 +1049,50 @@ const HandleBooking: React.FC = () => {
         )}
 
         {activeSection === "emails" && (
-          <div className="mt-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-              <div>
+          <div className="mt-4 bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-start justify-between gap-3 mb-3">
+              <div className="min-w-0">
                 <h3 className="font-semibold text-md text-slate-900">
                   Customer emails
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
                   Matched by booking ID, customer email, or mobile from support
-                  inbox.
+                  inbox. If someone else emailed about this booking, notify both addresses.
                 </p>
               </div>
-              {(booking?.email || booking?.mobile) && (
-                <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                  {booking?.email ? (
-                    <div>
-                      <b>Email:</b> {booking.email}
-                    </div>
-                  ) : null}
-                  {booking?.mobile ? (
-                    <div>
-                      <b>Mobile:</b> {booking.mobile}
-                    </div>
-                  ) : null}
-                </div>
-              )}
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
+                {(booking?.email || booking?.mobile) && (
+                  <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 break-words">
+                    {booking?.email ? (
+                      <div>
+                        <b>Booking email:</b> {booking.email}
+                      </div>
+                    ) : null}
+                    {booking?.mobile ? (
+                      <div>
+                        <b>Mobile:</b> {booking.mobile}
+                      </div>
+                    ) : null}
+                    {linkedComplaintEmails.length > 0 ? (
+                      <div>
+                        <b>Complaint sender:</b> {linkedComplaintEmails.join(", ")}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  disabled={notifying || notifyRecipientEmails.length === 0}
+                  onClick={handleNotifyCustomers}
+                  className="w-full sm:w-auto px-3 py-2 rounded-lg bg-[#2f6cf6] text-white text-sm font-medium disabled:opacity-60"
+                >
+                  {notifying
+                    ? "Sending…"
+                    : linkedComplaintEmails.length > 0
+                      ? "Email both: looking into it"
+                      : "Email customer: looking into it"}
+                </button>
+              </div>
             </div>
             {relatedEmailsLoading ? (
               <p className="text-sm text-gray-500">Looking up related emails…</p>
@@ -1274,9 +1527,16 @@ const HandleBooking: React.FC = () => {
         </div>
 
         {/* ACTION BUTTONS */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-wrap gap-2">
           <button
-            className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow hover:bg-yellow-600"
+            className="px-4 py-2.5 rounded-lg bg-rose-600 text-white shadow hover:bg-rose-700 disabled:opacity-60"
+            disabled={escalating}
+            onClick={handleEscalateIssue}
+          >
+            {escalating ? "Escalating…" : "Escalate issue"}
+          </button>
+          <button
+            className="px-4 py-2.5 rounded-lg bg-yellow-500 text-white shadow hover:bg-yellow-600"
             onClick={() => setAssignOpen(true)}
           >
             Assign Cab Driver

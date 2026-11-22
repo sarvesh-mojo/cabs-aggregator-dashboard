@@ -30,6 +30,7 @@ import {
   sendCustomerResolution,
   sendPartnerEscalation,
   updateEmailComplaintCase,
+  updateEmailComplaintMatch,
   type EmailComplaintThread,
   type EmailComplaintTrailMessage,
 } from "../../../config/customerCare/emailComplaintApi";
@@ -254,13 +255,6 @@ function formatTravel(value?: string | null) {
   });
 }
 
-function formatMobile(value?: string | null) {
-  const digits = String(value || "").replace(/\D/g, "");
-  if (digits.length === 10) return `+91 ${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+91 ${digits.slice(2)}`;
-  return value || "—";
-}
-
 function bookingStatusLabel(status: unknown) {
   if (status == null || status === "") return "—";
   if (typeof status === "string" || typeof status === "number") {
@@ -340,7 +334,8 @@ function threadsToRows(threads: EmailComplaintThread[], rowPrefix = "email") {
 function blankRow(thread: EmailComplaintThread, body: string, rowPrefix = "email"): ComplaintRow {
   return {
     _rowKey: `${rowPrefix}-${thread.id}-none`,
-    bookingId: "",
+    bookingId: String(thread.bookingId || ""),
+    mobile: thread.customerMobile || "",
     emailComplaint: thread,
     emailBody: body,
     emailPreviewText: emailPreview(body) || thread.subject || "",
@@ -460,6 +455,8 @@ export default function EmailComplaintTab({
   const [partnerCcText, setPartnerCcText] = useState("");
   const [partnerPhone, setPartnerPhone] = useState("");
   const [bookingId, setBookingId] = useState("");
+  const [matchMobile, setMatchMobile] = useState("");
+  const [matching, setMatching] = useState(false);
   const [sending, setSending] = useState<"partner" | "customer" | null>(null);
   const [pendingSend, setPendingSend] = useState<"partner" | "customer" | null>(null);
   const [sendError, setSendError] = useState("");
@@ -663,6 +660,7 @@ export default function EmailComplaintTab({
     setReplyTo(thread.customerEmail || "");
     setReplyCc("");
     setBookingId(resolvedBookingId);
+    setMatchMobile(String(thread.customerMobile || row.mobile || "").replace(/\D/g, "").slice(-10));
     setBookingIndex(0);
     setComposerTab("reply");
     setCustomerDraft(thread.draftReply || "");
@@ -922,6 +920,7 @@ export default function EmailComplaintTab({
     const id = String(booking.bookingId || "");
     const contact = resolvePartnerForComplaint(booking.cabPartner, `${openThread.subject || ""}\n${openBody}`);
     setBookingId(id);
+    setMatchMobile(String(booking.mobile || openThread.customerMobile || "").replace(/\D/g, "").slice(-10));
     applyPartner(
       contact,
       openThread,
@@ -930,6 +929,68 @@ export default function EmailComplaintTab({
       openThread.customerName || booking.userName,
       openThread.customerMobile || booking.mobile,
     );
+  };
+
+  const applyMatchedThread = (thread: EmailComplaintThread) => {
+    const rebuilt = threadsToRows([withLocalReplies(thread)]);
+    const first = rebuilt[0];
+    setRows((current) => [
+      ...rebuilt,
+      ...current.filter((row) => row.emailComplaint?.id !== thread.id),
+    ]);
+    setBlacklistedRows((current) =>
+      current.filter((row) => row.emailComplaint?.id !== thread.id),
+    );
+    setOpenThread(thread);
+    setBookingId(String(thread.bookingId || ""));
+    setMatchMobile(String(thread.customerMobile || "").replace(/\D/g, "").slice(-10));
+    setBookingIndex(0);
+    if (first) setSelectedKey(first._rowKey);
+    const primary = (Array.isArray(thread.bookings) ? thread.bookings[0] : null) as Booking | null;
+    const contact = resolvePartnerForComplaint(
+      primary?.cabPartner || thread.cabPartner,
+      `${thread.subject || ""}\n${openBody}`,
+    );
+    const ids = thread.bookingId ? [String(thread.bookingId)] : [];
+    applyPartner(
+      contact,
+      thread,
+      openBody,
+      ids,
+      thread.customerName || primary?.userName,
+      thread.customerMobile || primary?.mobile,
+    );
+    if (first) void loadSuggestion(first);
+  };
+
+  const saveMatch = async () => {
+    if (!openThread) return;
+    const id = bookingId.trim().toUpperCase();
+    const mobile = matchMobile.replace(/\D/g, "").slice(-10);
+    if (!id && !mobile) {
+      message.error("Enter a booking ID or mobile number from the customer message.");
+      return;
+    }
+    setMatching(true);
+    try {
+      const result = await updateEmailComplaintMatch(openThread.id, {
+        bookingId: id || undefined,
+        customerMobile: mobile || undefined,
+      });
+      if (!result?.thread) {
+        message.error("Match was saved but booking details did not return.");
+        return;
+      }
+      applyMatchedThread({
+        ...result.thread,
+        messages: openThread.messages,
+      });
+      message.success("Booking linked. View Full Booking is now available.");
+    } catch (error) {
+      message.error(emailComplaintError(error));
+    } finally {
+      setMatching(false);
+    }
   };
 
   const selectPartner = (key: string) => {
@@ -1873,15 +1934,30 @@ export default function EmailComplaintTab({
                 ))}
               </select>
             ) : null}
-            <MetaRow label="Booking ID">{activeBooking?.bookingId || bookingId || "—"}</MetaRow>
+            <label className="block py-[7px] text-[13px]">
+              <span className="text-gray-400">Booking ID</span>
+              <input
+                value={bookingId}
+                onChange={(event) => setBookingId(event.target.value.toUpperCase())}
+                placeholder="Paste from image / email"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-gray-800 outline-none focus:border-blue-300"
+              />
+            </label>
             <MetaRow label="Partner">{partnerName || "—"}</MetaRow>
             <MetaRow label="Partner email">{partnerTo || "—"}</MetaRow>
             <MetaRow label="Customer">
               {activeBooking?.userName || openThread?.customerName || "—"}
             </MetaRow>
-            <MetaRow label="Mobile">
-              {formatMobile(activeBooking?.mobile || openThread?.customerMobile)}
-            </MetaRow>
+            <label className="block py-[7px] text-[13px]">
+              <span className="text-gray-400">Mobile</span>
+              <input
+                value={matchMobile}
+                onChange={(event) => setMatchMobile(event.target.value.replace(/\D/g, "").slice(0, 12))}
+                placeholder="10-digit mobile"
+                inputMode="numeric"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-gray-800 outline-none focus:border-blue-300"
+              />
+            </label>
             <MetaRow label="Email">
               {activeBooking?.email || openThread?.customerEmail || "—"}
             </MetaRow>
@@ -1891,11 +1967,22 @@ export default function EmailComplaintTab({
                 {bookingStatusLabel(activeBooking?.status)}
               </span>
             </MetaRow>
+            <p className="mt-1 text-[11px] leading-4 text-gray-400">
+              If the booking ID was only in an image, type it here (or the mobile) and update the match.
+            </p>
+            <button
+              type="button"
+              disabled={matching || (!bookingId.trim() && !matchMobile.trim())}
+              onClick={() => void saveMatch()}
+              className="mt-3 w-full rounded-lg bg-[#2f6cf6] py-2 text-sm font-medium text-white hover:bg-[#2558d6] disabled:opacity-50"
+            >
+              {matching ? "Updating…" : activeBooking?.bookingId ? "Update match" : "Link booking"}
+            </button>
             <button
               type="button"
               disabled={!activeBooking?.bookingId}
               onClick={() => activeBooking?.bookingId && onViewDetails(activeBooking)}
-              className="mt-3 w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="mt-2 w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               View Full Booking
             </button>

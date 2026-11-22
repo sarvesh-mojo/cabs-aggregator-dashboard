@@ -52,6 +52,9 @@ const DRAFT = "/api/v1/operations/emailComplaint/draft";
 const SEND = "/api/v1/operations/emailComplaint/send";
 const ESCALATE = "/api/v1/operations/emailComplaint/escalate";
 const CASE = "/api/v1/operations/emailComplaint/case";
+const MATCH = "/api/v1/operations/emailComplaint/match";
+const BOOKING_ESCALATE = "/api/v1/operations/emailComplaint/bookingEscalate";
+const BOOKING_NOTIFY = "/api/v1/operations/emailComplaint/bookingNotify";
 
 function analyticsSession() {
   const read = store.getState().authStore.partner_wise_data?.[0]?.read;
@@ -268,6 +271,17 @@ export async function updateEmailComplaintCase(
   return unwrap(response);
 }
 
+export async function updateEmailComplaintMatch(
+  threadId: number,
+  body: { bookingId?: string; customerMobile?: string },
+) {
+  const response = await client(30000).post<Envelope<{ thread: EmailComplaintThread }>>(MATCH, {
+    threadId,
+    ...body,
+  });
+  return unwrap(response);
+}
+
 export async function sendPartnerEscalation(
   threadId: number,
   body: { draft: string; bookingId?: string; to?: string; cc?: string[]; partnerName?: string },
@@ -276,5 +290,33 @@ export async function sendPartnerEscalation(
     threadId,
     ...body,
   });
+  return unwrap(response);
+}
+
+export async function escalateBookingIssue(body: {
+  bookingId: string;
+  note?: string;
+  agent?: string;
+  linkedEmails?: string[];
+  booking?: Record<string, unknown> | null;
+}) {
+  const response = await client(60000).post<Envelope<{ sent: boolean; to?: string[] }>>(
+    BOOKING_ESCALATE,
+    body,
+  );
+  return unwrap(response);
+}
+
+export async function notifyBookingCustomers(body: {
+  bookingId?: string;
+  emails: string[];
+  draftReply?: string;
+  subject?: string;
+  threadId?: number;
+}) {
+  const response = await client(60000).post<Envelope<{ sent: boolean; to?: string[] }>>(
+    BOOKING_NOTIFY,
+    body,
+  );
   return unwrap(response);
 }
