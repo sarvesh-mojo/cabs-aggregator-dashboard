@@ -993,6 +993,30 @@ export default function EmailComplaintTab({
     }
   };
 
+  const unlinkMatch = async () => {
+    if (!openThread) return;
+    setMatching(true);
+    try {
+      const result = await updateEmailComplaintMatch(openThread.id, { unlink: true });
+      const cleared: EmailComplaintThread = {
+        ...(result?.thread || openThread),
+        bookingId: null,
+        customerMobile: null,
+        cabPartner: null,
+        bookings: [],
+        messages: openThread.messages,
+      };
+      applyMatchedThread(cleared);
+      setBookingId("");
+      setMatchMobile("");
+      message.success("Booking unlinked from this email.");
+    } catch (error) {
+      message.error(emailComplaintError(error));
+    } finally {
+      setMatching(false);
+    }
+  };
+
   const selectPartner = (key: string) => {
     if (!openThread) return;
     const contact = partnerContactByKey(key);
@@ -1978,6 +2002,16 @@ export default function EmailComplaintTab({
             >
               {matching ? "Updating…" : activeBooking?.bookingId ? "Update match" : "Link booking"}
             </button>
+            {activeBooking?.bookingId || openThread?.bookingId || bookingId.trim() ? (
+              <button
+                type="button"
+                disabled={matching}
+                onClick={() => void unlinkMatch()}
+                className="mt-2 w-full rounded-lg border border-rose-200 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+              >
+                {matching ? "Unlinking…" : "Unlink booking"}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={!activeBooking?.bookingId}

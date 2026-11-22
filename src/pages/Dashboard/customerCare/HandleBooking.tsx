@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Modal, message } from "antd";
+import { message } from "antd";
 import { MdContentCopy } from "react-icons/md";
 import {
   cancelBookingApi,
@@ -574,52 +574,45 @@ const HandleBooking: React.FC = () => {
     return [...emails];
   }, [booking?.email, linkedComplaintEmails]);
 
-  const handleEscalateIssue = () => {
+  const handleEscalateIssue = async () => {
     if (!booking?.bookingId) {
       message.error("Load a booking before escalating.");
       return;
     }
-    Modal.confirm({
-      title: "Escalate this booking as urgent?",
-      content:
-        "An email will be sent to the configured ops inbox asking them to look into this matter urgently.",
-      okText: "Send escalation",
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        setEscalating(true);
-        try {
-          await escalateBookingIssue({
-            bookingId: String(booking.bookingId),
-            agent:
-              sessionStorage["userName"] ||
-              store.getState().authStore?.login_username ||
-              "CX agent",
-            linkedEmails: linkedComplaintEmails,
-            booking: {
-              parentBookingId: booking.parentBookingId,
-              status: booking.status,
-              userName: booking.userName,
-              mobile: booking.mobile,
-              email: booking.email,
-              cabPartner: booking.cabPartner,
-              sourceName: booking.sourceName,
-              destinationName: booking.destinationName,
-              pickupTime: booking.pickupTime,
-            },
-          });
-          message.success("Escalation email sent to ops");
-        } catch (error) {
-          const text = emailComplaintError(error);
-          message.error(text || "Escalation failed");
-          return Promise.reject(error);
-        } finally {
-          setEscalating(false);
-        }
-      },
-    });
+    const confirmed = window.confirm(
+      "Escalate this booking as urgent?\n\nAn email will be sent to the configured ops inbox asking them to look into this matter urgently.",
+    );
+    if (!confirmed) return;
+    setEscalating(true);
+    try {
+      await escalateBookingIssue({
+        bookingId: String(booking.bookingId),
+        agent:
+          sessionStorage["userName"] ||
+          store.getState().authStore?.login_username ||
+          "CX agent",
+        linkedEmails: linkedComplaintEmails,
+        booking: {
+          parentBookingId: booking.parentBookingId,
+          status: booking.status,
+          userName: booking.userName,
+          mobile: booking.mobile,
+          email: booking.email,
+          cabPartner: booking.cabPartner,
+          sourceName: booking.sourceName,
+          destinationName: booking.destinationName,
+          pickupTime: booking.pickupTime,
+        },
+      });
+      message.success("Escalation email sent to ops");
+    } catch (error) {
+      message.error(emailComplaintError(error) || "Escalation failed");
+    } finally {
+      setEscalating(false);
+    }
   };
 
-  const handleNotifyCustomers = () => {
+  const handleNotifyCustomers = async () => {
     if (!booking?.bookingId || notifyRecipientEmails.length === 0) {
       message.error("No customer emails available for this booking");
       return;
@@ -628,37 +621,33 @@ const HandleBooking: React.FC = () => {
       notifyRecipientEmails.length > 1
         ? `Both ${notifyRecipientEmails.join(" and ")}`
         : notifyRecipientEmails[0];
-    Modal.confirm({
-      title: "Email customer that we are looking into this?",
-      content: `${both} will receive: we are looking into this matter and will call shortly.`,
-      okText: "Send email",
-      onOk: async () => {
-        setNotifying(true);
-        try {
-          const linkedThread = relatedEmails.find((thread) =>
-            notifyRecipientEmails.includes(
-              String(thread.customerEmail || "").trim().toLowerCase(),
-            ),
-          );
-          await notifyBookingCustomers({
-            bookingId: String(booking.bookingId),
-            emails: notifyRecipientEmails,
-            draftReply: lookingIntoDraft(booking.bookingId),
-            threadId: linkedThread?.id,
-          });
-          message.success(
-            notifyRecipientEmails.length > 1
-              ? "Update emailed to booking email and complaint sender"
-              : "Update emailed to customer",
-          );
-        } catch (error) {
-          message.error(emailComplaintError(error));
-          throw error;
-        } finally {
-          setNotifying(false);
-        }
-      },
-    });
+    const confirmed = window.confirm(
+      `Email customer that we are looking into this?\n\n${both} will receive: we are looking into this matter and will call shortly.`,
+    );
+    if (!confirmed) return;
+    setNotifying(true);
+    try {
+      const linkedThread = relatedEmails.find((thread) =>
+        notifyRecipientEmails.includes(
+          String(thread.customerEmail || "").trim().toLowerCase(),
+        ),
+      );
+      await notifyBookingCustomers({
+        bookingId: String(booking.bookingId),
+        emails: notifyRecipientEmails,
+        draftReply: lookingIntoDraft(booking.bookingId),
+        threadId: linkedThread?.id,
+      });
+      message.success(
+        notifyRecipientEmails.length > 1
+          ? "Update emailed to booking email and complaint sender"
+          : "Update emailed to customer",
+      );
+    } catch (error) {
+      message.error(emailComplaintError(error));
+    } finally {
+      setNotifying(false);
+    }
   };
 
   const { selectedPartner } = store.getState().operationStore;

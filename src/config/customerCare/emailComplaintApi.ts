@@ -325,7 +325,7 @@ export async function updateEmailComplaintCase(
 
 export async function updateEmailComplaintMatch(
   threadId: number,
-  body: { bookingId?: string; customerMobile?: string },
+  body: { bookingId?: string; customerMobile?: string; unlink?: boolean },
 ) {
   const response = await client(30000).post<Envelope<{ thread: EmailComplaintThread }>>(MATCH, {
     threadId,
