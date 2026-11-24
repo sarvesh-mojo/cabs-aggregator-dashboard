@@ -35,6 +35,7 @@ import { ConversionLogs } from "./pages/Dashboard/analytics/ConversionLogs";
 import { SlaRides } from "./pages/Dashboard/analytics/SlaRides";
 import { HomeCX } from "./pages/Dashboard/customerCare/HomeCX";
 import { FareSearchReport } from "./pages/Dashboard/analytics/FareSearchReport";
+import { FareSearchRideType } from "./pages/Dashboard/analytics/FareSearchRideType";
 import { SearchLeadTime } from "./pages/Dashboard/analytics/SearchLeadTime";
 import { MetroRouteMap } from "./pages/Dashboard/analytics/MetroRouteMap";
 import { FareSearchAnalytics } from "./pages/Dashboard/analytics/FareSearchAnalytics";
@@ -284,6 +285,10 @@ export default function App() {
             <Route
               path="/dashboard/analytics/FareSearchReport"
               element={<FareSearchReport />}
+            />
+            <Route
+              path="/dashboard/analytics/FareSearchRideType"
+              element={<FareSearchRideType />}
             />
             <Route
               path="/dashboard/analytics/SearchLeadTime"

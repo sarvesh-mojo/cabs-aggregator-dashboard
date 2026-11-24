@@ -92,6 +92,7 @@ export const navItems: NavItem[] = [
         pro: false,
       },
       { id: "2.4", name: "Fare Search Report", path: "/dashboard/analytics/FareSearchReport", pro: false },
+      { id: "2.10", name: "Fare Search by Ride Type", path: "/dashboard/analytics/FareSearchRideType", pro: false },
       { id: "2.9", name: "Same-day vs Future", path: "/dashboard/analytics/SearchLeadTime", pro: false },
       { id: "2.5", name: "Demand Density Map", path: "/dashboard/analytics/MetroRoutes", pro: false },
       { id: "2.6", name: "Fare Search Booking Funnel", path: "/dashboard/analytics/FareSearchAnalytics", pro: false },
