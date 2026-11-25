@@ -77,6 +77,8 @@ type JourneyTypeChoice = "auto" | JourneyType;
 type Props = {
   partner: string;
   host: string;
+  /** When true, fare search returns discount meta (strike / % off). Default off. */
+  showDiscount?: boolean;
 };
 
 const TRUST_PILLS = [
@@ -365,7 +367,11 @@ function PaymentChoice({
   );
 }
 
-export default function RailUiFareSearch({ partner, host }: Props) {
+export default function RailUiFareSearch({
+  partner,
+  host,
+  showDiscount = false,
+}: Props) {
   const [step, setStep] = useState<Step>("search");
   const [payloadText, setPayloadText] = useState(() =>
     JSON.stringify(defaultRailPayload(), null, 2)
@@ -538,7 +544,7 @@ export default function RailUiFareSearch({ partner, host }: Props) {
       setDestinationPlace(prepared.destination);
       setPlacesSession(newPlacesSessionToken());
 
-      const res = await OPS_FARE_SEARCH(partner, prepared.body);
+      const res = await OPS_FARE_SEARCH(partner, prepared.body, { showDiscount });
       if (res?.status === "success" && Array.isArray(res.data)) {
         const faresForTrip =
           prepared.body.journeyType === "RENTAL"

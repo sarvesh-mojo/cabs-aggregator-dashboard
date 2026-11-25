@@ -1451,6 +1451,7 @@ const OpsFareSearch = () => {
   const [editorOpen, setEditorOpen] = useState(true);
   const [selectedFare, setSelectedFare] = useState<any | null>(null);
   const [uiTheme, setUiTheme] = useState<FareUiTheme>("MOJOUI");
+  const [showDiscount, setShowDiscount] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const partnerKey = apiPartnerKey(String(selectedPartner || ""));
@@ -1519,7 +1520,7 @@ const OpsFareSearch = () => {
 
     setLoading(true);
     try {
-      const res = await OPS_FARE_SEARCH(selectedPartner, body);
+      const res = await OPS_FARE_SEARCH(selectedPartner, body, { showDiscount });
       if (res?.status === "success" && Array.isArray(res.data)) {
         setFares(res.data);
         setTrip(body);
@@ -1551,28 +1552,47 @@ const OpsFareSearch = () => {
       <PageMeta title="Fare Search" description="Search partner fares" />
       <PartnerTab propsData={{ isall: false }} />
 
-      {hasRailUiTheme && (
-        <div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center justify-end gap-2">
-          <label
-            className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-            htmlFor="fare-ui-theme"
-          >
-            UI theme
-          </label>
-          <select
-            id="fare-ui-theme"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none"
-            value={uiTheme}
-            onChange={(event) => setUiTheme(event.target.value as FareUiTheme)}
-          >
-            <option value="MOJOUI">MOJOUI</option>
-            <option value="RAILUI">RAILUI</option>
-          </select>
-        </div>
-      )}
+      <div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center justify-end gap-3">
+        <label
+          className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+          htmlFor="fare-show-discount-top"
+        >
+          <input
+            id="fare-show-discount-top"
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            checked={showDiscount}
+            onChange={(event) => setShowDiscount(event.target.checked)}
+          />
+          Show discount
+        </label>
+        {hasRailUiTheme && (
+          <>
+            <label
+              className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              htmlFor="fare-ui-theme"
+            >
+              UI theme
+            </label>
+            <select
+              id="fare-ui-theme"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none"
+              value={uiTheme}
+              onChange={(event) => setUiTheme(event.target.value as FareUiTheme)}
+            >
+              <option value="MOJOUI">MOJOUI</option>
+              <option value="RAILUI">RAILUI</option>
+            </select>
+          </>
+        )}
+      </div>
 
       {useRailUi ? (
-        <RailUiFareSearch partner={selectedPartner} host={host} />
+        <RailUiFareSearch
+          partner={selectedPartner}
+          host={host}
+          showDiscount={showDiscount}
+        />
       ) : (
       <div className="mx-auto mt-4 max-w-5xl">
         {fares.length > 0 && (
@@ -1756,6 +1776,22 @@ const OpsFareSearch = () => {
                 onChange={(event) => setPayloadText(event.target.value)}
                 spellCheck={false}
               />
+              <label
+                className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700"
+                htmlFor="fare-show-discount"
+              >
+                <input
+                  id="fare-show-discount"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={showDiscount}
+                  onChange={(event) => setShowDiscount(event.target.checked)}
+                />
+                Show discount breakdown
+              </label>
+              <p className="mt-1 text-xs text-gray-500">
+                Off by default — fares show payable only. Turn on to see strike-through and % off from hourly discount config.
+              </p>
             </>
           )}
 

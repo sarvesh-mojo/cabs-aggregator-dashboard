@@ -867,12 +867,18 @@ export const EXPORT_BOOKING_CSV = async (
 /** Ops fare search — uses the selected partner tab host and token. */
 export const OPS_FARE_SEARCH = async (
   selectedPartner: string,
-  payload: Record<string, any>
+  payload: Record<string, any>,
+  options?: { showDiscount?: boolean }
 ) => {
-  // Ops always opts into discount meta so Payment mode / cards can use finalFare.
+  // Default off: hide discount meta (payable folded into fare). Pass showDiscount=1 to expose strike / % off.
+  const showDiscount = options?.showDiscount === true;
+  const qs = new URLSearchParams({
+    context: "mojoboxx",
+    showDiscount: showDiscount ? "1" : "0",
+  });
   const response = await PostAPI<any>(
     resolvePartner(selectedPartner),
-    `${FARE_SEARCH}?context=mojoboxx&showDiscount=1`,
+    `${FARE_SEARCH}?${qs.toString()}`,
     payload
   );
   return response.data;
