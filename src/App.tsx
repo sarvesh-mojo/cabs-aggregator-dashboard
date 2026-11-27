@@ -66,6 +66,7 @@ import CloudwatchErrors from "./pages/Dashboard/customerCare/CloudwatchErrors";
 import AggregatorOverview from "./pages/Dashboard/aggregator/Overview";
 import AggregatorBookings from "./pages/Dashboard/aggregator/Bookings";
 import AggregatorMarkup from "./pages/Dashboard/aggregator/Markup";
+import OpsPartnerControl from "./pages/Dashboard/customerCare/OpsPartnerControl";
 
 
 export default function App() {
@@ -228,6 +229,10 @@ export default function App() {
             <Route
               path="/dashboard/customerCare/IbcManagement"
               element={<IbcManagement />}
+            />
+            <Route
+              path="/dashboard/customerCare/OpsPartnerControl"
+              element={<OpsPartnerControl />}
             />
             <Route
               path="/dashboard/customerCare/OfferManagement"

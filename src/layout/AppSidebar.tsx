@@ -302,6 +302,20 @@ const othersItems: NavItem[] = [
   ],
 },
 {
+  id: "11.0",
+  icon: <TableIcon />,
+  name: "Ops Partner Control",
+  subItems: [
+    {
+      id: "11.1",
+      name: "Partner Control Hub",
+      path: "/dashboard/customerCare/OpsPartnerControl",
+      pro: false,
+      new: true,
+    },
+  ],
+},
+{
   id: "7.0",
   icon: <TableIcon />, 
   name: "Offers Management",
