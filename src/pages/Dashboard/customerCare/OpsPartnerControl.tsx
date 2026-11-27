@@ -83,23 +83,25 @@ function hourInWindow(hour: number, fromHour: number, toHour: number) {
     : hour >= fromHour || hour <= toHour; // wraps past midnight
 }
 
+/** Keys must match city_cab_status DB columns (snake_case). genericCreate inserts keys as-is. */
 const CITY_CAB_STATUS_FIELDS: FieldSpec[] = [
   { key: "name", label: "Name", type: "text" },
   { key: "code", label: "City code", type: "text" },
-  { key: "isArrival", label: "Arrival enabled", type: "select", options: FLAG_OPTIONS, numeric: true },
-  { key: "isDeparture", label: "Departure enabled", type: "select", options: FLAG_OPTIONS, numeric: true },
-  { key: "arrivalPartner", label: "Arrival partners (CSV)", type: "text" },
-  { key: "departurePartner", label: "Departure partners (CSV)", type: "text" },
+  { key: "is_arrival", label: "Arrival enabled", type: "select", options: FLAG_OPTIONS, numeric: true },
+  { key: "is_departure", label: "Departure enabled", type: "select", options: FLAG_OPTIONS, numeric: true },
+  { key: "arrival_partner", label: "Arrival partners (CSV)", type: "text" },
+  { key: "departure_partner", label: "Departure partners (CSV)", type: "text" },
   { key: "rental", label: "Rental partners (CSV)", type: "text" },
   { key: "outstation", label: "Outstation partners (CSV)", type: "text" },
   { key: "status", label: "Active", type: "select", options: FLAG_OPTIONS, numeric: true },
   { key: "tag", label: "Tag", type: "text" },
-  { key: "vehicleType", label: "Vehicle type", type: "text" },
-  { key: "desiredCount", label: "Desired count (balance logic)", type: "number" },
-  { key: "fareTierEnabled", label: "Fare tier enabled", type: "select", options: FLAG_OPTIONS, numeric: true },
-  { key: "fareTierPercent", label: "Fare tier %", type: "number" },
-  { key: "lowestFareCount", label: "Lowest fare count", type: "number" },
-  { key: "nextTierFareCount", label: "Next tier fare count", type: "number" },
+  { key: "client_id", label: "Client id", type: "text" },
+  { key: "vehicle_type", label: "Vehicle type", type: "text" },
+  { key: "desired_count", label: "Desired count (balance logic)", type: "number" },
+  { key: "fare_tier_enabled", label: "Fare tier enabled", type: "select", options: FLAG_OPTIONS, numeric: true },
+  { key: "fare_tier_percent", label: "Fare tier %", type: "number" },
+  { key: "lowest_fare_count", label: "Lowest fare count", type: "number" },
+  { key: "next_tier_fare_count", label: "Next tier fare count", type: "number" },
 ];
 
 const CAB_PARTNER_VISIBILITY_FIELDS: FieldSpec[] = [
@@ -151,7 +153,7 @@ const TABLE_META: Record<
     label: "Live (city_cab_status)",
     fields: CITY_CAB_STATUS_FIELDS,
     cityField: "code",
-    listColumns: ["id", "code", "name", "status", "arrivalPartner", "departurePartner"],
+    listColumns: ["id", "code", "name", "status", "arrival_partner", "departure_partner"],
     identityFields: ["name", "code"],
   },
   cab_partner_visibility: {
@@ -391,7 +393,7 @@ const OpsPartnerControl = () => {
       // city_cab_status has no single partner column — it stores CSV partner
       // lists per travel type, so the partner match has to happen client-side.
       const liveFiltered = liveRows.filter((row: any) =>
-        ["arrivalPartner", "departurePartner", "rental", "outstation"].some((col) =>
+        ["arrival_partner", "departure_partner", "rental", "outstation"].some((col) =>
           String(row[col] || "").toUpperCase().includes(partnerUpper),
         ),
       );

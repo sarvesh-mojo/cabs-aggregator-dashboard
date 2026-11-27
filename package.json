@@ -1,7 +1,7 @@
 {
   "name": "cabs-aggregator-dashboard",
   "private": true,
-  "version": "2.0.14",
+  "version": "2.0.15",
   "description": "VIA VIP aggregator control — management UI + cabs-aggregator config/analytics",
   "type": "module",
   "scripts": {
