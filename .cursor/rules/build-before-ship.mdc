@@ -1,0 +1,10 @@
+---
+description: Always npm run build before commit/push of frontend changes
+alwaysApply: true
+---
+
+# Build before ship
+
+Before committing or pushing changes in this repo, run `npm run build` (`tsc -b && vite build`) and fix any TypeScript/build errors first.
+
+When the change is part of work that also touches **mojo-management-frontend**, run `npm run build` in **both** frontends before commit/push — do not ship one while the other is red.

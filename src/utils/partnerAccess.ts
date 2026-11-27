@@ -333,6 +333,30 @@ export function isDevOperationsLogin(username?: string | null): boolean {
   return getLoginUsername(username).toLowerCase().endsWith("-dev");
 }
 
+/** "operations dev" and "operations-dev" are the same dev-panel account. */
+export function isDevPanelLogin(username?: string | null): boolean {
+  const login = getLoginUsername(username).toLowerCase().replace(/\s+/g, "-");
+  return login.endsWith("-dev");
+}
+
+/**
+ * Dev login: a Yatra/BAC booking detail call against the Yatra host returns 403,
+ * and that 403 logs the user out. Those bookings already load through BAC.
+ * Every other login keeps the partner it already uses.
+ */
+export function bookingDetailPartner(
+  partner: string,
+  username?: string | null,
+  loginPartners?: string[] | null,
+): string {
+  const normalized = String(partner || "").trim().toLowerCase();
+  if (normalized !== "yatra" || !isDevPanelLogin(username)) return partner;
+  const hasBac = (loginPartners || []).some(
+    (name) => String(name).toLowerCase() === "bac",
+  );
+  return hasBac ? "bac" : partner;
+}
+
 export function getMojoEventApiBaseUrl(username?: string | null): string {
   if (isDevOperationsLogin(username)) {
     return (
