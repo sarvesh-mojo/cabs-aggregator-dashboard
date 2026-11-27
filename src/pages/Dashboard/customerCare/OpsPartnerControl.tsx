@@ -11,6 +11,7 @@ import {
   GET_HOURLY_THRESHOLD_STATUS,
 } from "../../../config/customerCare/operationsApicall";
 import HourlyQuotaBoard from "./HourlyQuotaBoard";
+import OpsPartnerRunbook from "./OpsPartnerRunbook";
 
 /**
  * Ops Partner Control — partner-first hub for the tables Cab Management
@@ -314,9 +315,10 @@ function RowFormModal({
   );
 }
 
-type ViewKey = "portfolio" | "discount" | "quota" | "simulate" | "bulk";
+type ViewKey = "portfolio" | "discount" | "quota" | "simulate" | "bulk" | "runbook";
 
 const VIEWS: { key: ViewKey; label: string }[] = [
+  { key: "runbook", label: "Runbook / How to play" },
   { key: "portfolio", label: "Partner portfolio" },
   { key: "discount", label: "Hourly discount" },
   { key: "quota", label: "Hourly quota" },
@@ -335,7 +337,7 @@ const OrderOfOperationsPanel = () => (
 
 const OpsPartnerControl = () => {
   const OperationstoreData = useSelector((state: any) => state?.operationStore);
-  const [activeView, setActiveView] = useState<ViewKey>("portfolio");
+  const [activeView, setActiveView] = useState<ViewKey>("runbook");
   const [SelectedPartner, setSelectedPartner] = useState<string>(
     OperationstoreData?.ReportSelectedPartner,
   );
@@ -713,6 +715,12 @@ const OpsPartnerControl = () => {
             </button>
           ))}
         </div>
+
+        {activeView === "runbook" && (
+          <div className="border border-gray-200 rounded-xl p-5 bg-gray-50/50">
+            <OpsPartnerRunbook />
+          </div>
+        )}
 
         {/* ---------------- Partner portfolio ---------------- */}
         {activeView === "portfolio" && (
